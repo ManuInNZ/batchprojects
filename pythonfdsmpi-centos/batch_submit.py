@@ -455,9 +455,9 @@ if __name__ == '__main__':
 
     # Use the blob client to create the containers in Azure Storage if they
     # don't yet exist.
-    app_container_name = 'application'
-    input_container_name = 'input'
-    output_container_name = 'output'
+    app_container_name = 'application_{}'.format(_JOB_ID)
+    input_container_name = 'input_{}'.format(_JOB_ID)
+    output_container_name = 'output_{}'.format(_JOB_ID)
     blob_client.create_container(app_container_name, fail_on_exist=False)
     blob_client.create_container(input_container_name, fail_on_exist=False)
     blob_client.create_container(output_container_name, fail_on_exist=False)
@@ -569,9 +569,11 @@ if __name__ == '__main__':
 
     # Clean up storage resources
     print('Deleting containers...')
-    blob_client.delete_container(app_container_name)
-    blob_client.delete_container(input_container_name)
-    blob_client.delete_container(output_container_name)
+    if query_yes_no('Delete appl and input storage containers?') == 'yes':
+        blob_client.delete_container(input_container_name)
+        blob_client.delete_container(app_container_name)
+    if query_yes_no('Delete output storage containers?') == 'yes':
+        blob_client.delete_container(output_container_name)
 
     # Print out some timing info
     end_time = datetime.datetime.now().replace(microsecond=0)
