@@ -66,12 +66,12 @@ _NODE_OS_SKU = '7.3'
 _JOB_ID = 'Job{}'.format(datetime.datetime.now().strftime("-%y%m%d-%H%M%S"))
 
 _TUTORIAL_TASK_FILE = 'task.py'
-#_TUTORIAL_EXECUTABLE = 'app.zip'
 _TUTORIAL_EXECUTABLE = 'fds.zip'
 _TUTORIAL_MPI = 'mpi_small.zip'
 _TUTORIAL_SCRIPT = 'runscript.sh'
 _TUTORIAL_PREPSCRIPT = 'prepscript.sh'
 _MESH_COUNT = '1'
+_OPENMP_COUNT = '1'
 
 
 
@@ -327,11 +327,12 @@ def add_tasks(batch_service_client, job_id, input_files,
     for idx, input_file in enumerate(input_files):
 
         command = ['python $AZ_BATCH_NODE_SHARED_DIR/{} '
-                   '--filepath {} --numwords {} --storageaccount {} '
+                   '--filepath {} --mesh {} --openmp {} --storageaccount {} '
                    '--storagecontainer {} --sastoken "{}"'.format(
                        _TUTORIAL_TASK_FILE,
                        input_file.file_path,
-                       '10',
+                       _MESH_COUNT,
+                       _OPENMP_COUNT,
                        _STORAGE_ACCOUNT_NAME,
                        output_container_name,
                        output_container_sas_token)]
@@ -340,12 +341,12 @@ def add_tasks(batch_service_client, job_id, input_files,
                 'topNtask{}'.format(idx),
                 common.helpers.wrap_commands_in_shell('linux', command),
                 resource_files=[input_file],
-		multi_instance_settings=(batch.models.MultiInstanceSettings(
-			coordination_command_line=common.helpers.wrap_commands_in_shell('linux',task_commands),
-			number_of_instances=_POOL_NODE_COUNT)
-			),
-		user_identity=batch.models.UserIdentity(user_name='myuser'),
-                )
+		        multi_instance_settings=(batch.models.MultiInstanceSettings(
+			        coordination_command_line=common.helpers.wrap_commands_in_shell('linux',task_commands),
+			        number_of_instances=_POOL_NODE_COUNT)
+			    ),
+		        user_identity=batch.models.UserIdentity(user_name='myuser'),
+            )
         )
 
     batch_service_client.task.add_collection(job_id, tasks)
@@ -419,25 +420,25 @@ def main(argv):
    inputfile = ''
    #outputfile = ''
    try:
-      opts, args = getopt.getopt(argv,"hi:m:",["inputfile=", "mesh="])
+      opts, args = getopt.getopt(argv,"hi:m:",["inputfile=", "mesh=", "openmp="])
    except getopt.GetoptError:
-      print('submit_batch.py -i <inputfile> [-m <meshcount>]')
+      print('submit_batch.py -i <inputfile> [-m <meshcount> -mp <openMPcount>]')
       sys.exit(2)
    for opt, arg in opts:
       if opt == '-h':
-         print('submit_batch.py -i <inputfile> [-m <meshcount>]')
+         print('submit_batch.py -i <inputfile> [-m <meshcount> -mp <openMPcount>]')
          sys.exit()
       elif opt in ("-i", "--inputfile"):
          inputfile = arg
       elif opt in ("-m", "--mesh"):
          _MESH_COUNT = arg
+      elif opt in ("-mp", "--openmp"):
+         _OPENMP_COUNT = arg
    if inputfile == '':
-     print ("please provide an inputfile: submit_batch.py -i <inputfile> [-m <meshcount>]")
+     print ("please provide an inputfile: submit_batch.py -i <inputfile> [-m <meshcount>  -mp <openMPcount>]")
      sys.exit()
    print ('Input file is ', inputfile)
    return inputfile
-
-
 
 if __name__ == '__main__':
 
@@ -475,16 +476,28 @@ if __name__ == '__main__':
     # Upload the application script to Azure Storage. This is the script that
     # will process the data files, and is executed by each of the tasks on the
     # compute nodes.
+    starttask_time = datetime.datetime.now().replace(microsecond=0)
+    print('Uploading app files start: {}'.format(starttask_time)
     application_files = [
         upload_file_to_container(blob_client, app_container_name, file_path)
         for file_path in application_file_paths]
+    finishtask_time = datetime.datetime.now().replace(microsecond=0)
+    print()
+    print('Uploading app files end: {}'.format(finishtask_time))
+    print('Elapsed time: {}'.format(finishtask_time - starttask_time))
+    print()
 
     # Upload the data files. This is the data that will be processed by each of
     # the tasks executed on the compute nodes in the pool.
+    starttask_time = datetime.datetime.now().replace(microsecond=0)
+    print('Uploading data files start: {}'.format(starttask_time))
     input_files = [
         upload_file_to_container(blob_client, input_container_name, file_path)
         for file_path in input_file_paths]
-
+    print()
+    print('Uploading data files end: {}'.format(finishtask_time))
+    print('Elapsed time: {}'.format(finishtask_time - starttask_time))
+    print()
     # Obtain a shared access signature that provides write access to the output
     # container to which the tasks will upload their output.
     output_container_sas_token = get_container_sas_token(
@@ -505,19 +518,31 @@ if __name__ == '__main__':
     # tasks. The resource files we pass in are used for configuring the pool's
     # start task, which is executed each time a node first joins the pool (or
     # is rebooted or re-imaged).
+
+    starttask_time = datetime.datetime.now().replace(microsecond=0)
+    print('Creating pool start: {}'.format(starttask_time))
     create_pool(batch_client,
                 _POOL_ID,
                 application_files,
                 _NODE_OS_PUBLISHER,
                 _NODE_OS_OFFER,
                 _NODE_OS_SKU)
-
+    print()
+    print('Creating pool end: {}'.format(finishtask_time))
+    print('Elapsed time: {}'.format(finishtask_time - starttask_time))
+    print()
     # Create the job that will run the tasks.
+    
+    starttask_time = datetime.datetime.now().replace(microsecond=0)
+    print('Creating job start: {}'.format(starttask_time))
     create_job(batch_client, _JOB_ID, _POOL_ID)
 
     # Add the tasks to the job. We need to supply a container shared access
     # signature (SAS) token for the tasks so that they can upload their output
     # to Azure Storage.
+    starttask_time = datetime.datetime.now().replace(microsecond=0)
+    print('Adding tasks start: {}'.format(starttask_time))
+
     add_tasks(batch_client,
               _JOB_ID,
               input_files,
@@ -525,6 +550,9 @@ if __name__ == '__main__':
               output_container_sas_token)
 
     # Pause execution until tasks reach Completed state.
+    starttask_time = datetime.datetime.now().replace(microsecond=0)
+    print('Waiting tasks start: {}'.format(starttask_time))
+
     wait_for_tasks_to_complete(batch_client,
                                _JOB_ID,
                                datetime.timedelta(minutes=30))

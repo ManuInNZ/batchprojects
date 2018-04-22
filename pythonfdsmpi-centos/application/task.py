@@ -41,8 +41,10 @@ if __name__ == '__main__':
                              'may include a compute node\'s environment'
                              'variables, such as'
                              '$AZ_BATCH_NODE_SHARED_DIR/filename.txt')
-    parser.add_argument('--numwords', type=int, required=True,
-                        help='The number of words to print top frequency.')
+    parser.add_argument('--mesh', type=int, required=True,
+                        help='The number of meshes for the FDS model.')
+    parser.add_argument('--openmp', type=int, required=True,
+                        help='The number of OpenMP processors count.')
     parser.add_argument('--storageaccount', required=True,
                         help='The name the Azure Storage account that owns the'
                              'blob storage container to which to upload'
@@ -58,7 +60,7 @@ if __name__ == '__main__':
     input_file = os.path.realpath(args.filepath)
     input_project = args.filepath
     output_file = os.path.realpath('fds_results.zip')
-    output_file = 'fds_results.zip'
+    output_file = '{}_fds_results.zip'.format(os.environ['AZ_BATCH_POOL_ID'])
     #output_file = '{}_OUTPUT{}'.format(
     #    os.path.splitext(args.filepath)[0],
     #    os.path.splitext(args.filepath)[1])
