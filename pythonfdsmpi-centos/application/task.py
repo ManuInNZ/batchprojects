@@ -59,29 +59,14 @@ if __name__ == '__main__':
 
     input_file = os.path.realpath(args.filepath)
     input_project = args.filepath
+    input_mesh = args.mesh
+    input_openmp = args.openmp
     output_file = os.path.realpath('fds_results.zip')
     output_file = '{}_fds_results.zip'.format(os.environ['AZ_BATCH_POOL_ID'])
-    #output_file = '{}_OUTPUT{}'.format(
-    #    os.path.splitext(args.filepath)[0],
-    #    os.path.splitext(args.filepath)[1])
-
-    #with open(input_file) as f:
-    #    words = [word.strip(string.punctuation) for word in f.read().split()]
-    run_command = "runscript.sh " + input_file + " " + input_project
+    run_command = "runscript.sh " + input_file + " " + input_project + " " + input_mesh + " " + input_openmp 
     #call("runscript.sh", shell=True)
     call(run_command, shell=True)
 
-    #word_counts = collections.Counter(words)
-    #with open(output_file, "w") as text_file:
-    #    print('Word\tCount', file=text_file)
-    #    print("------------------------------", file=text_file)
-    #    for word, count in word_counts.most_common(args.numwords):
-    #        print(word + ':\t' + str(count), file=text_file)
-    #    print("------------------------------", file=text_file)
-    #    print("Node: " + os.environ['AZ_BATCH_NODE_ID'], file=text_file)
-    #    print("Task: " + os.environ['AZ_BATCH_TASK_ID'], file=text_file)
-    #    print("Job:  " + os.environ['AZ_BATCH_JOB_ID'], file=text_file)
-    #    print("Pool: " + os.environ['AZ_BATCH_POOL_ID'], file=text_file)
 
     # Create the blob client using the container's SAS token.
     # This allows us to create a client that provides write
