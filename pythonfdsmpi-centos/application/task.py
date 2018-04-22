@@ -62,7 +62,7 @@ if __name__ == '__main__':
     input_mesh = args.mesh
     input_openmp = args.openmp
     output_file = os.path.realpath('fds_results.zip')
-    output_file = '{}_fds_results.zip'.format(os.environ['AZ_BATCH_POOL_ID'])
+    output_file = 'fds_results.zip'
     run_command = "runscript.sh " + input_file + " " + input_project + " " + input_mesh + " " + input_openmp 
     #call("runscript.sh", shell=True)
     call(run_command, shell=True)
