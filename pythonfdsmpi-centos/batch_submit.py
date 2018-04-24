@@ -28,7 +28,9 @@ from __future__ import print_function
 try:
     import configparser
 except ImportError:
-    import ConfigParser as configparserimport datetime
+    import ConfigParser as configparser
+
+import datetime
 import os
 import sys
 import getopt
@@ -424,36 +426,42 @@ def download_blobs_from_container(block_blob_client,
 
 def main(argv):
    inputfile = ''
+   meshcount = 1
+   openMPcount = 1
    # outputfile = ''
    try:
       opts, args = getopt.getopt(
-          argv, "hi:m:", ["inputfile=", "mesh=", "openmp="])
+          argv, "hi:mp:", ["inputfile=", "mesh=", "openmp="])
    except getopt.GetoptError:
       print(
-          'submit_batch.py -i <inputfile> [-m <meshcount> -mp <openMPcount>]')
+          'submit_batch.py -i <inputfile> [-m <meshcount> -p <openMPcount>]')
       sys.exit(2)
    for opt, arg in opts:
+      print('opt:{}\narg:{}'.format(opt,arg))
       if opt == '-h':
          print(
-             'submit_batch.py -i <inputfile> [-m <meshcount> -mp <openMPcount>]')
+             'submit_batch.py -i <inputfile> [-m <meshcount> -p <openMPcount>]')
          sys.exit()
       elif opt in ("-i", "--inputfile"):
          inputfile = arg
       elif opt in ("-m", "--mesh"):
-         _MESH_COUNT = arg
-      elif opt in ("-mp", "--openmp"):
-         _OPENMP_COUNT = arg
+         meshcount = arg
+      elif opt in ("-p", "--openmp"):
+         openMPcount = arg
+        
    if inputfile == '':
      print(
-         "please provide an inputfile: submit_batch.py -i <inputfile> [-m <meshcount>  -mp <openMPcount>]")
+         "please provide an inputfile: submit_batch.py -i <inputfile> [-m <meshcount>  -p <openMPcount>]")
      sys.exit()
    print('Input file is ', inputfile)
-   return inputfile
+   print('Params: \nmesh={}\nopenmp={}'.format(meshcount,openMPcount))
+   print()
+   return inputfile, meshcount, openMPcount
 
 
 if __name__ == '__main__':
 
-    inputfile = main(sys.argv[1:])
+    inputfile, _MESH_COUNT, _OPENMP_COUNT = main(sys.argv[1:])
     start_time = datetime.datetime.now().replace(microsecond=0)
     print('Sample start: {}'.format(start_time))
     print()
@@ -475,11 +483,14 @@ if __name__ == '__main__':
         account_name=_STORAGE_ACCOUNT_NAME,
         account_key=_STORAGE_ACCOUNT_KEY)
 
+    print('Created blob client')
     # Use the blob client to create the containers in Azure Storage if they
     # don't yet exist.
     app_container_name = 'application'
-    input_container_name = 'input_{}'.format(_JOB_ID)
-    output_container_name = 'output_{}'.format(_JOB_ID)
+    input_container_name = 'input'
+    output_container_name = 'output{}'.format(datetime.datetime.now().strftime("-%y%m%d-%H%M%S"))
+#    print('Containers: \n{}\n{}\n{}\n'.format(app_container_name,input_container_name,output_container_name))
+#    print()
     blob_client.create_container(app_container_name, fail_on_exist=False)
     blob_client.create_container(input_container_name, fail_on_exist=False)
     blob_client.create_container(output_container_name, fail_on_exist=False)
@@ -499,7 +510,7 @@ if __name__ == '__main__':
     # will process the data files, and is executed by each of the tasks on the
     # compute nodes.
     starttask_time = datetime.datetime.now().replace(microsecond=0)
-    print('Uploading app files start: {}'.format(starttask_time)
+    print('Uploading app files start: {}'.format(starttask_time))
     application_files=[
         upload_file_to_container(blob_client, app_container_name, file_path)
         for file_path in application_file_paths]
