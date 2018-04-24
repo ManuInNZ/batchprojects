@@ -63,7 +63,7 @@ _STORAGE_ACCOUNT_KEY = ''
 # to be overloaded with config file
 
 _POOL_ID = 'Pool{}'.format(datetime.datetime.now().strftime("-%y%m%d-%H%M%S"))
-_POOL_NODE_COUNT = 1
+_POOL_NODE_COUNT = 2
 # _POOL_VM_SIZE = 'BASIC_A2'
 _POOL_VM_SIZE = 'Standard_H16r'
 # _NODE_OS_PUBLISHER = 'Canonical'
@@ -428,22 +428,25 @@ def main(argv):
    inputfile = ''
    meshcount = 1
    openMPcount = 1
+   nodes = 2
    # outputfile = ''
    try:
       opts, args = getopt.getopt(
-          argv, "hi:mp:", ["inputfile=", "mesh=", "openmp="])
+          argv, "hi:n:m:p:", ["inputfile=", "nodes=", "mesh=", "openmp="])
    except getopt.GetoptError:
       print(
-          'submit_batch.py -i <inputfile> [-m <meshcount> -p <openMPcount>]')
+          'submit_batch.py -i <inputfile> [-n <nodecount> -m <meshcount> -p <openMPcount>]')
       sys.exit(2)
    for opt, arg in opts:
-      print('opt:{}\narg:{}'.format(opt,arg))
+      #print('opt:{}\narg:{}'.format(opt,arg))
       if opt == '-h':
          print(
-             'submit_batch.py -i <inputfile> [-m <meshcount> -p <openMPcount>]')
+             'submit_batch.py -i <inputfile> [-n <nodecount> -m <meshcount> -p <openMPcount>]')
          sys.exit()
       elif opt in ("-i", "--inputfile"):
          inputfile = arg
+      elif opt in ("-n", "--nodes"):
+         nodes = arg
       elif opt in ("-m", "--mesh"):
          meshcount = arg
       elif opt in ("-p", "--openmp"):
@@ -451,17 +454,17 @@ def main(argv):
         
    if inputfile == '':
      print(
-         "please provide an inputfile: submit_batch.py -i <inputfile> [-m <meshcount>  -p <openMPcount>]")
+         "please provide an inputfile: submit_batch.py -i <inputfile> [-n <nodecount> -m <meshcount>  -p <openMPcount>]")
      sys.exit()
    print('Input file is ', inputfile)
-   print('Params: \nmesh={}\nopenmp={}'.format(meshcount,openMPcount))
+   print('Params: \nnodes:{}\nmesh={}\nopenmp={}'.format(nodes,meshcount,openMPcount))
    print()
-   return inputfile, meshcount, openMPcount
+   return inputfile, nodes, meshcount, openMPcount
 
 
 if __name__ == '__main__':
 
-    inputfile, _MESH_COUNT, _OPENMP_COUNT = main(sys.argv[1:])
+    inputfile, _POOL_NODE_COUNT, _MESH_COUNT, _OPENMP_COUNT = main(sys.argv[1:])
     start_time = datetime.datetime.now().replace(microsecond=0)
     print('Sample start: {}'.format(start_time))
     print()
