@@ -38,8 +38,12 @@ cd $AZ_BATCH_TASK_SHARED_DIR
 cd share
 cp -p $AZ_BATCH_NODE_SHARED_DIR/* .
 
-#mpirun -hosts $AZ_BATCH_HOST_LIST -np 8 ./fds circular_burner.fds 
-mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MESH -env OMP_NUM_THREADS $OPENMP fds $PROJECT_NAME 
+mpivars=$(find /opt/intel -name mpivars.sh)
+source $mpivars
+export MPI_ROOT=$I_MPI_ROOT
+
+mpirun -hosts $AZ_BATCH_HOST_LIST -np $MESH  fds circular_burner.fds 
+#mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MESH fds $PROJECT_NAME 
 
 zip fds_results.zip ${SHORT_NAME}* 
 cp fds_results.zip ../wd/
