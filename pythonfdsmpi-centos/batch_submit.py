@@ -25,30 +25,33 @@
 # DEALINGS IN THE SOFTWARE.
 
 from __future__ import print_function
+
+import datetime
+import getopt
+import os
+import sys
+import time
+
+import azure.batch.batch_auth as batchauth
+import azure.batch.batch_service_client as batch
+import azure.batch.models as batchmodels
+import azure.storage.blob as azureblob
+import common.helpers  # noqa
+
 try:
     import configparser
 except ImportError:
     import ConfigParser as configparser
 
-import datetime
-import os
-import sys
-import getopt
-import time
 
 try:
     input = raw_input
 except NameError:
     pass
 
-import azure.storage.blob as azureblob
-import azure.batch.batch_service_client as batch
-import azure.batch.batch_auth as batchauth
-import azure.batch.models as batchmodels
 
 sys.path.append('.')
 sys.path.append('..')
-import common.helpers  # noqa
 
 # Update the Batch and Storage account credential strings below with the values
 # unique to your accounts. These are used when constructing connection strings
@@ -60,12 +63,16 @@ _BATCH_ACCOUNT_URL = ''
 _STORAGE_ACCOUNT_NAME = ''
 _STORAGE_ACCOUNT_KEY = ''
 
+_APP_INSIGHTS_APP_ID = ''
+_APP_INSIGHTS_INSTRUMENTATION_KEY = ''
+
 # to be overloaded with config file
 
 _POOL_ID = 'Pool{}'.format(datetime.datetime.now().strftime("-%y%m%d-%H%M%S"))
 _POOL_NODE_COUNT = 2
 # _POOL_VM_SIZE = 'BASIC_A2'
-_POOL_VM_SIZE = 'Standard_H16r'
+#_POOL_VM_SIZE = 'Standard_H16r'
+_POOL_VM_SIZE = 'STANDARD_A8'
 # _NODE_OS_PUBLISHER = 'Canonical'
 _NODE_OS_PUBLISHER = 'Openlogic'
 _NODE_OS_OFFER = 'CentOS-HPC'
@@ -222,21 +229,31 @@ def create_pool(batch_service_client, pool_id,
         # otherwise since this start task is run as an admin, it would not
         # be accessible by tasks run as a non-admin user.
         'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_TUTORIAL_TASK_FILE),
-        'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_TUTORIAL_EXECUTABLE),
-        'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_TUTORIAL_MPI),
+        #'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_TUTORIAL_EXECUTABLE),
+        #'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_TUTORIAL_MPI),
         'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_TUTORIAL_SCRIPT),
         'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_TUTORIAL_PREPSCRIPT),
-        'chmod +x $AZ_BATCH_NODE_SHARED_DIR/{}'.format(_TUTORIAL_EXECUTABLE),
-        # 'sudo apt-get update',
-        # 'sudo apt-get install -y zip unzip libdapl2 libmlx4-1 bc wget libgomp1 nfs-server',
-        # 'sudo yum -y -q install wget 2>&1',
-        # 'tar zxvf $AZ_BATCH_NODE_SHARED_DIR/{} --directory=$AZ_BATCH_NODE_SHARED_DIR/'.format(_TUTORIAL_EXECUTABLE),
-        'unzip -u $AZ_BATCH_NODE_SHARED_DIR/{} -d $AZ_BATCH_NODE_SHARED_DIR/'.format(
-            _TUTORIAL_EXECUTABLE),
-        'unzip -u $AZ_BATCH_NODE_SHARED_DIR/{} -d $AZ_BATCH_NODE_SHARED_DIR/'.format(
-            _TUTORIAL_MPI),
+        #'sudo yum -y update',
+        'sudo yum -y install nfs-utils',
+        ## Install pip
+        'sudo yum -y install epel-release',
+        'sudo yum -y install python-pip',
+        'sudo yum -y install htop',
+        'sudo pip install azure-storage==0.32.0',
+        'mkdir -p /home/myuser/.ssh',
+        'chmod 700 /home/myuser/.ssh',
+        'echo "StrictHostKeyChecking no" >> /home/myuser/.ssh/config',  
+        'chmod 600 /home/myuser/.ssh/config',
         'chmod +x $AZ_BATCH_NODE_SHARED_DIR/{}'.format(_TUTORIAL_SCRIPT),
-        'chmod +x $AZ_BATCH_NODE_SHARED_DIR/{}'.format(_TUTORIAL_PREPSCRIPT)
+        'chmod +x $AZ_BATCH_NODE_SHARED_DIR/{}'.format(_TUTORIAL_PREPSCRIPT),
+        'wget  https://raw.githubusercontent.com/Azure/batch-insights/master/centos.sh',
+        'sudo bash ./centos.sh',
+        'export HOME=$AZ_BATCH_NODE_SHARED_DIR',
+        'cd $AZ_BATCH_APP_PACKAGE_fds_bundle',
+        './FDS_6.6.0-SMV_6.6.0_linux64.sh y'
+        #,
+        #'sudo echo "$AZ_BATCH_NODE_SHARED_DIR/FDS/FDS6/bin/FDS6VARS.sh" >> /etc/bashrc'
+        #'bash ./*.sh y'
         # Install pip
         # 'curl -fSsL https://bootstrap.pypa.io/get-pip.py | sudo python',
         # Install the azure-storage module so that the task script can access
@@ -270,11 +287,16 @@ def create_pool(batch_service_client, pool_id,
         start_task=batch.models.StartTask(
             command_line=common.helpers.wrap_commands_in_shell('linux',
                                                                task_commands),
+            environment_settings=[batch.models.EnvironmentSetting('APP_INSIGHTS_APP_ID', value=_APP_INSIGHTS_APP_ID),
+                                  batch.models.EnvironmentSetting('APP_INSIGHTS_INSTRUMENTATION_KEY', value=_APP_INSIGHTS_INSTRUMENTATION_KEY)],
 	        user_identity=batch.models.UserIdentity(user_name='myuser'),
             wait_for_success=True,
             resource_files=resource_files),
+        application_package_references=[batch.models.ApplicationPackageReference(
+            'fds_bundle', version='6.6.0')],
 	    user_accounts=[batch.models.UserAccount(
-	        'myuser', 'makethisaverysecureandrandompassword', elevation_level='admin', linux_user_configuration=None)],
+	        'myuser', 'makethisaverysecureandrandompassword', elevation_level='admin', 
+            linux_user_configuration=None)],
     )
 
     try:
@@ -323,7 +345,7 @@ def add_tasks(batch_service_client, job_id, input_files,
     """
 
     task_commands = [
-	'$AZ_BATCH_NODE_SHARED_DIR/{}'.format(_TUTORIAL_PREPSCRIPT)
+	'bash $AZ_BATCH_NODE_SHARED_DIR/{}'.format(_TUTORIAL_PREPSCRIPT)
 	]
 
     print('Adding {} tasks to job [{}]...'.format(len(input_files), job_id))
@@ -478,6 +500,9 @@ if __name__ == '__main__':
 
     _STORAGE_ACCOUNT_KEY = global_config.get('Storage', 'storageaccountkey')
     _STORAGE_ACCOUNT_NAME = global_config.get('Storage', 'storageaccountname')
+
+    _APP_INSIGHTS_APP_ID = global_config.get('AppInsights', 'applicationid')
+    _APP_INSIGHTS_INSTRUMENTATION_KEY = global_config.get('AppInsights', 'instrumentationkey')
     # storage_account_suffix = global_config.get('Storage', 'storageaccountsuffix')
 
     # Create the blob client, for use in obtaining references to
@@ -501,8 +526,8 @@ if __name__ == '__main__':
     # Paths to the task script. This script will be executed by the tasks that
     # run on the compute nodes.
     application_file_paths = [os.path.realpath('./application/{}'.format(_TUTORIAL_TASK_FILE)),
-			      os.path.realpath('./application/{}'.format(_TUTORIAL_EXECUTABLE)),
-			      os.path.realpath('./application/{}'.format(_TUTORIAL_MPI)),
+	#		      os.path.realpath('./application/{}'.format(_TUTORIAL_EXECUTABLE)),
+	#		      os.path.realpath('./application/{}'.format(_TUTORIAL_MPI)),
 			      os.path.realpath('./application/{}'.format(_TUTORIAL_SCRIPT)),
 			      os.path.realpath('./application/{}'.format(_TUTORIAL_PREPSCRIPT))]
 

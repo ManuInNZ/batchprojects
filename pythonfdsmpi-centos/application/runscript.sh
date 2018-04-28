@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # some comments to make sure the file is a little over 1K since otherwise it seems that the blob upload does not really understand it....
 # some comments to make sure the file is a little over 1K since otherwise it seems that the blob upload does not really understand it....
@@ -21,23 +21,25 @@ echo $0 $1 $2 $3 $4
 echo "# input file: $INPUT_FILE"
 echo "# project: $PROJECT_NAME $SHORT_NAME"
 echo "# number of meshes:" $MESH
+echo "# number of openMP:" $OPENMP
 
 export LD_LIBRARY_PATH=$AZ_BATCH_NODE_SHARED_DIR:$LD_LIBRARY_PATH
 export PATH=./:$PATH
+
+source $AZ_BATCH_NODE_SHARED_DIR/FDS/FDS6/bin/FDS6VARS.sh
 #export I_MPI_FABRICS=tcp  #no rdma so using tcp here...
 export I_MPI_FABRICS=shm:dapl  #  using rdma here...
 export I_MPI_DAPL_PROVIDER=ofa-v2-ib0
 export I_MPI_DYNAMIC_CONNECTION=0
 export I_MPI_PIN_DOMAIN=omp
-
-env
+export FDSNETWORK=infiniband
 
 cd $AZ_BATCH_TASK_SHARED_DIR
 cd share
-cp $AZ_BATCH_NODE_SHARED_DIR/* .
+cp -p $AZ_BATCH_NODE_SHARED_DIR/* .
 
 #mpirun -hosts $AZ_BATCH_HOST_LIST -np 8 ./fds circular_burner.fds 
-mpirun -hosts $AZ_BATCH_HOST_LIST -np $MESH -env OMP_NUM_THREADS $OPENMP ./fds $PROJECT_NAME 
+mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MESH -env OMP_NUM_THREADS $OPENMP fds $PROJECT_NAME 
 
 zip fds_results.zip ${SHORT_NAME}* 
 cp fds_results.zip ../wd/
