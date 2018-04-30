@@ -44,7 +44,14 @@ mpivars=$(find /opt/intel -name mpivars.sh)
 source $mpivars
 export MPI_ROOT=$I_MPI_ROOT
 
-mpirun -hosts $AZ_BATCH_HOST_LIST -np $MESH  fds $PROJECT_NAME
+# circular 8 meshes
+# openMP 4
+# h16r 16 cores
+# 8*4 = sum of cores = 32
+# 32 / (number cores per machine - corefactor) * node = ppn
+
+
+mpirun -hosts $AZ_BATCH_HOST_LIST  -np $MESH fds $PROJECT_NAME
 #mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MESH fds $PROJECT_NAME 
 
 zip fds_results.zip ${SHORT_NAME}* 
