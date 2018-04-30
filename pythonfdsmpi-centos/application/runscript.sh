@@ -26,7 +26,9 @@ echo "# number of openMP:" $OPENMP
 export LD_LIBRARY_PATH=$AZ_BATCH_NODE_SHARED_DIR:$LD_LIBRARY_PATH
 export PATH=./:$PATH
 
-source $AZ_BATCH_NODE_SHARED_DIR/FDS/FDS6/bin/FDS6VARS.sh
+fdsvars = $(find $AZ_BATCH_NODE_SHARED_DIR -name FDS6VARS.sh)
+source $fdsvars
+#source $AZ_BATCH_NODE_SHARED_DIR/FDS/FDS6/bin/FDS6VARS.sh
 #export I_MPI_FABRICS=tcp  #no rdma so using tcp here...
 export I_MPI_FABRICS=shm:dapl  #  using rdma here...
 export I_MPI_DAPL_PROVIDER=ofa-v2-ib0
@@ -42,7 +44,7 @@ mpivars=$(find /opt/intel -name mpivars.sh)
 source $mpivars
 export MPI_ROOT=$I_MPI_ROOT
 
-mpirun -hosts $AZ_BATCH_HOST_LIST -np $MESH  fds circular_burner.fds 
+mpirun -hosts $AZ_BATCH_HOST_LIST -np $MESH  fds $PROJECT_NAME
 #mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MESH fds $PROJECT_NAME 
 
 zip fds_results.zip ${SHORT_NAME}* 
