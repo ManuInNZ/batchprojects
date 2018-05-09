@@ -163,7 +163,7 @@ def upload_file_to_container(block_blob_client, container_name, file_path):
         container_name,
         blob_name,
         permission=azureblob.BlobPermissions.READ,
-        expiry=datetime.datetime.utcnow() + datetime.timedelta(hours=8))
+        expiry=datetime.datetime.utcnow() + datetime.timedelta(days=8))
 
     sas_url = block_blob_client.make_blob_url(container_name,
                                               blob_name,
@@ -193,7 +193,7 @@ def get_container_sas_token(block_blob_client,
         block_blob_client.generate_container_shared_access_signature(
             container_name,
             permission=blob_permissions,
-            expiry=datetime.datetime.utcnow() + datetime.timedelta(hours=2))
+            expiry=datetime.datetime.utcnow() + datetime.timedelta(days=8))
 
     return container_sas_token
 
@@ -618,7 +618,7 @@ if __name__ == '__main__':
 
     wait_for_tasks_to_complete(batch_client,
                                _JOB_ID,
-                               datetime.timedelta(minutes=30))
+                               datetime.timedelta(days=30))
 
     print("  Success! All tasks reached the 'Completed' state within the "
           "specified timeout period.")

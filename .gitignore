@@ -1,2 +1,4 @@
 .vscode/
+result/
+benchmark/
 pythonfdsmpi-centos/configuration.cfg
