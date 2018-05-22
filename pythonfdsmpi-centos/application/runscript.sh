@@ -55,5 +55,5 @@ export MPI_ROOT=$I_MPI_ROOT
 mpirun -hosts $AZ_BATCH_HOST_LIST -np $MESH fds $PROJECT_NAME
 #mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MESH fds $PROJECT_NAME 
 
-zip fds_results.zip ${SHORT_NAME}* ../stderr.txt ../stdout.txt
+zip fds_results.zip * ../stderr.txt ../stdout.txt
 cp fds_results.zip ../wd/
