@@ -2,3 +2,5 @@
 result/
 benchmark/
 pythonfdsmpi-centos/configuration.cfg
+**.pyc
+pythonfdsmpi-centos/batch_metrics.py
