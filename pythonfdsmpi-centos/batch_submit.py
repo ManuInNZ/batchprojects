@@ -243,7 +243,7 @@ def create_pool(batch_service_client, pool_id,
         'sudo pip install azure-storage==0.32.0',
         'mkdir -p /home/myuser/.ssh',
         'chmod 700 /home/myuser/.ssh',
-        'echo "StrictHostKeyChecking no" >> /home/myuser/.ssh/config',  
+        'echo "StrictHostKeyChecking no" >> /home/myuser/.ssh/config',
         'chmod 600 /home/myuser/.ssh/config',
         'export APP_INSIGHTS_APP_ID="{}"'.format(_APP_INSIGHTS_APP_ID),
         'echo "APP_INSIGHTS_INSTRUMENTATION_KEY={}" >> /home/myuser/.bashrc'.format(
@@ -267,12 +267,12 @@ def create_pool(batch_service_client, pool_id,
         # Install the azure-storage module so that the task script can access
         # Azure Blob storage, pre-cryptography version
         # 'pip install azure-storage==0.32.0'
-	# make sure MPI is allowed to run in Ubuntu, without this, this is seen as a security attack....
-	# 'sudo sed -i -e "s/kernel.yama.ptrace_scope = 1/kernel.yama.ptrace_scope = 0/" /etc/sysctl.d/10-ptrace.conf',
-	# 'sudo sysctl -w kernel.yama.ptrace_scope=0',
-	# 'bash -c sudo "echo \"*           hard    memlock         unlimited\" >> /etc/security/limits.conf"',
-	# 'bash -c sudo "echo \"*           soft    memlock         unlimited\" >> /etc/security/limits.conf"',
-	]
+        # make sure MPI is allowed to run in Ubuntu, without this, this is seen as a security attack....
+        # 'sudo sed -i -e "s/kernel.yama.ptrace_scope = 1/kernel.yama.ptrace_scope = 0/" /etc/sysctl.d/10-ptrace.conf',
+        # 'sudo sysctl -w kernel.yama.ptrace_scope=0',
+        # 'bash -c sudo "echo \"*           hard    memlock         unlimited\" >> /etc/security/limits.conf"',
+        # 'bash -c sudo "echo \"*           soft    memlock         unlimited\" >> /etc/security/limits.conf"',
+    ]
 
     # Get the node agent SKU and image reference for the virtual machine
     # configuration.
@@ -297,13 +297,13 @@ def create_pool(batch_service_client, pool_id,
                                                                task_commands),
             environment_settings=[batch.models.EnvironmentSetting('APP_INSIGHTS_APP_ID', value=_APP_INSIGHTS_APP_ID),
                                   batch.models.EnvironmentSetting('APP_INSIGHTS_INSTRUMENTATION_KEY', value=_APP_INSIGHTS_INSTRUMENTATION_KEY)],
-	        user_identity=batch.models.UserIdentity(user_name='myuser'),
+            user_identity=batch.models.UserIdentity(user_name='myuser'),
             wait_for_success=True,
             resource_files=resource_files),
         application_package_references=[batch.models.ApplicationPackageReference(
             'fds_bundle', version='6.6.0')],
-	    user_accounts=[batch.models.UserAccount(
-	        'myuser', 'makethisaverysecureandrandompassword', elevation_level='admin', 
+        user_accounts=[batch.models.UserAccount(
+            'myuser', 'makethisaverysecureandrandompassword', elevation_level='admin',
             linux_user_configuration=None)],
     )
 
@@ -353,8 +353,8 @@ def add_tasks(batch_service_client, job_id, input_files,
     """
 
     task_commands = [
-	'bash $AZ_BATCH_NODE_SHARED_DIR/{}'.format(_TUTORIAL_PREPSCRIPT)
-	]
+        'bash $AZ_BATCH_NODE_SHARED_DIR/{}'.format(_TUTORIAL_PREPSCRIPT)
+    ]
 
     print('Adding {} tasks to job [{}]...'.format(len(input_files), job_id))
 
@@ -375,16 +375,16 @@ def add_tasks(batch_service_client, job_id, input_files,
                        output_container_sas_token)]
 
         tasks.append(batch.models.TaskAddParameter(
-                'topNtask{}'.format(idx),
-                common.helpers.wrap_commands_in_shell('linux', command),
-                resource_files=[input_file],
-		        multi_instance_settings=(batch.models.MultiInstanceSettings(
-			        coordination_command_line=common.helpers.wrap_commands_in_shell(
-			            'linux', task_commands),
-			        number_of_instances=_POOL_NODE_COUNT)
-			    ),
-		        user_identity=batch.models.UserIdentity(user_name='myuser'),
-            )
+            'topNtask{}'.format(idx),
+            common.helpers.wrap_commands_in_shell('linux', command),
+            resource_files=[input_file],
+            multi_instance_settings=(batch.models.MultiInstanceSettings(
+                coordination_command_line=common.helpers.wrap_commands_in_shell(
+                    'linux', task_commands),
+                number_of_instances=_POOL_NODE_COUNT)
+            ),
+            user_identity=batch.models.UserIdentity(user_name='myuser'),
+        )
         )
 
     batch_service_client.task.add_collection(job_id, tasks)
@@ -456,56 +456,56 @@ def download_blobs_from_container(block_blob_client,
 
 
 def main(argv):
-   inputfile = ''
-   meshcount = 1
-   openMPcount = 1
-   nodes = 2
+    inputfile = ''
+    meshcount = 1
+    openMPcount = 1
+    nodes = 2
     rdma = 0
     vmsku = 'STANDARD_A8'
     os_offer = 'CentOS'
-   # outputfile = ''
-   try:
-      opts, args = getopt.getopt(
+    # outputfile = ''
+    try:
+        opts, args = getopt.getopt(
             argv, "hi:n:m:p:r:v:", ["inputfile=", "nodes=", "mesh=", "openmp=", "rdma=", "vmsku="])
-   except getopt.GetoptError:
-      print(
-          'submit_batch.py -i <inputfile> [-n <nodecount> -m <meshcount> -p <openMPcount>]')
-      sys.exit(2)
-   for opt, arg in opts:
+    except getopt.GetoptError:
+        print(
+            'submit_batch.py -i <inputfile> [-n <nodecount> -m <meshcount> -p <openMPcount>]')
+        sys.exit(2)
+    for opt, arg in opts:
         # print('opt:{}\narg:{}'.format(opt,arg))
-      if opt == '-h':
-         print(
-             'submit_batch.py -i <inputfile> [-n <nodecount> -m <meshcount> -p <openMPcount>]')
-         sys.exit()
-      elif opt in ("-i", "--inputfile"):
-         inputfile = arg
-      elif opt in ("-n", "--nodes"):
-         nodes = arg
-      elif opt in ("-m", "--mesh"):
-         meshcount = arg
-      elif opt in ("-p", "--openmp"):
-         openMPcount = arg
+        if opt == '-h':
+            print(
+                'submit_batch.py -i <inputfile> [-n <nodecount> -m <meshcount> -p <openMPcount>]')
+            sys.exit()
+        elif opt in ("-i", "--inputfile"):
+            inputfile = arg
+        elif opt in ("-n", "--nodes"):
+            nodes = arg
+        elif opt in ("-m", "--mesh"):
+            meshcount = arg
+        elif opt in ("-p", "--openmp"):
+            openMPcount = arg
         elif opt in ("-r", "--rdma"):
             rdma = 1
             os_offer = 'CentOS-HPC'
         elif opt in ("-v", "--vmsku"):
             vmsku = arg
-        
-   if inputfile == '':
-     print(
-         "please provide an inputfile: submit_batch.py -i <inputfile> [-n <nodecount> -m <meshcount>  -p <openMPcount>]")
-     sys.exit()
-   print('Input file is ', inputfile)
+
+    if inputfile == '':
+        print(
+            "please provide an inputfile: submit_batch.py -i <inputfile> [-n <nodecount> -m <meshcount>  -p <openMPcount>]")
+        sys.exit()
+    print('Input file is ', inputfile)
     print('Params: \nnodes:{}\nmesh={}\nopenmp={}'.format(
-        nodes, meshcount, openMPcount))
-   print()
+            nodes, meshcount, openMPcount))
+    print()
     return inputfile, nodes, meshcount, openMPcount, rdma, os_offer, vmsku
 
 
 if __name__ == '__main__':
 
     inputfile, _POOL_NODE_COUNT, _MESH_COUNT, _OPENMP_COUNT, _USE_RDMA, _NODE_OS_OFFER, _POOL_VM_SIZE = main(
-            sys.argv[1:])
+        sys.argv[1:])
     start_time = datetime.datetime.now().replace(microsecond=0)
     print('Sample start: {}'.format(start_time))
     print()
@@ -547,11 +547,11 @@ if __name__ == '__main__':
     # Paths to the task script. This script will be executed by the tasks that
     # run on the compute nodes.
     application_file_paths = [os.path.realpath('./application/{}'.format(_TUTORIAL_TASK_FILE)),
-	#		      os.path.realpath('./application/{}'.format(_TUTORIAL_EXECUTABLE)),
-	#		      os.path.realpath('./application/{}'.format(_TUTORIAL_MPI)),
+                              #		      os.path.realpath('./application/{}'.format(_TUTORIAL_EXECUTABLE)),
+                              #		      os.path.realpath('./application/{}'.format(_TUTORIAL_MPI)),
                               os.path.realpath(
                                   './application/{}'.format(_TUTORIAL_SCRIPT)),
-			      os.path.realpath('./application/{}'.format(_TUTORIAL_PREPSCRIPT))]
+                              os.path.realpath('./application/{}'.format(_TUTORIAL_PREPSCRIPT))]
 
     # The collection of data files that are to be processed by the tasks.
     input_file_paths = [os.path.realpath(inputfile)]
@@ -605,9 +605,9 @@ if __name__ == '__main__':
     starttask_time = datetime.datetime.now().replace(microsecond=0)
     print('Creating pool start: {}'.format(starttask_time))
     print('create_pool(batch_client, {}, app ,{}, {},{}'.format(_POOL_ID,
-                _NODE_OS_PUBLISHER,
-                _NODE_OS_OFFER,
-                _NODE_OS_SKU))
+                                                                _NODE_OS_PUBLISHER,
+                                                                _NODE_OS_OFFER,
+                                                                _NODE_OS_SKU))
 
     create_pool(batch_client,
                 _POOL_ID,
