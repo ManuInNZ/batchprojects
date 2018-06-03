@@ -1,4 +1,4 @@
-# python_tutorial_task.py - Batch Python SDK tutorial sample
+# based on python_tutorial_task.py - Batch Python SDK tutorial sample
 #
 # Copyright (c) Microsoft Corporation
 #
@@ -42,12 +42,12 @@ if __name__ == '__main__':
                              'may include a compute node\'s environment'
                              'variables, such as'
                              '$AZ_BATCH_NODE_SHARED_DIR/filename.txt')
-    parser.add_argument('--mesh', type=int, required=True,
-                        help='The number of meshes for the FDS model.')
+    parser.add_argument('--mpiprocs', type=int, required=True,
+                        help='The number of mpi procs for the FDS model.')
     parser.add_argument('--openmp', type=int, required=True,
                         help='The number of OpenMP processors count.')
     parser.add_argument('--rdma', type=int, required=True,
-                        help='Should we use RDMA (1 as true/0 as false(default)).')             
+                        help='Should we use RDMA (1 as true/0 as false(default)).')
     parser.add_argument('--storageaccount', required=True,
                         help='The name the Azure Storage account that owns the'
                              'blob storage container to which to upload'
@@ -62,15 +62,19 @@ if __name__ == '__main__':
 
     input_file = os.path.realpath(args.filepath)
     input_project = args.filepath
-    input_mesh = args.mesh
+    input_mpiprocs = args.mpiprocs
     input_openmp = args.openmp
-    input_rdma= args.rdma
+    input_rdma = args.rdma
     #output_file = os.path.realpath('fds_results.zip')
     output_file = 'fds_results.zip'
-    run_command = "runscript.sh {} {} {} {} {}".format(input_file, input_project, input_mesh,input_openmp,input_rdma) 
+    run_command = "runscript.sh {} {} {} {} {}".format(
+        input_file,
+        input_project,
+        input_mpiprocs,
+        input_openmp,
+        input_rdma)
     #call("runscript.sh", shell=True)
     call(run_command, shell=True)
-
 
     # Create the blob client using the container's SAS token.
     # This allows us to create a client that provides write
@@ -87,3 +91,12 @@ if __name__ == '__main__':
     blob_client.create_blob_from_path(args.storagecontainer,
                                       output_file,
                                       output_file_path)
+
+    filelist = [os.path.realpath(input_project + 'out'),
+                os.path.realpath('stderr.txt'),
+                os.path.realpath('stdout.txt')]
+
+    blob_client.create_blob_from_path(args.storagecontainer,
+                                      os.path.basename(file_path),
+                                      file_path)
+        for file_path in filelist

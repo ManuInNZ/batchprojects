@@ -59,3 +59,6 @@ fi
 
 zip fds_results.zip * ../stderr.txt ../stdout.txt
 cp fds_results.zip ../wd/
+cp *.out ../wd/$PROJECT_NAME.out
+cp ../stderr.txt ../wd/
+cp ../stdout.txt ../wd/
