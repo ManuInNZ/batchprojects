@@ -528,8 +528,7 @@ if __name__ == '__main__':
     # Paths to the task script. This script will be executed by the tasks that
     # run on the compute nodes.
     application_file_paths = [os.path.realpath('./application/{}'.format(_TASK_FILE)),
-                              os.path.realpath(
-                                  './application/{}'.format(_SCRIPTFILE)),
+                              os.path.realpath('./application/{}'.format(_SCRIPTFILE)),
                               os.path.realpath('./application/{}'.format(_PREPSCRIPT))]
     # The collection of data files that are to be processed by the tasks.
     input_file_paths = [os.path.realpath(inputfile)]

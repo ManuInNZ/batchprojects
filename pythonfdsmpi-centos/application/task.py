@@ -96,7 +96,7 @@ if __name__ == '__main__':
                 os.path.realpath('stderr.txt'),
                 os.path.realpath('stdout.txt')]
 
-    blob_client.create_blob_from_path(args.storagecontainer,
-                                      os.path.basename(file_path),
-                                      file_path)
-        for file_path in filelist
+    for files_to_get in filelist:
+        blob_client.create_blob_from_path(args.storagecontainer,
+                                          os.path.basename(files_to_get),
+                                          files_to_get)
