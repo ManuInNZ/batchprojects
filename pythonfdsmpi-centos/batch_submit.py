@@ -71,20 +71,19 @@ _APP_INSIGHTS_INSTRUMENTATION_KEY = ''
 _POOL_ID = 'Pool{}'.format(datetime.datetime.now().strftime("-%y%m%d-%H%M%S"))
 _POOL_NODE_COUNT = 2
 # _POOL_VM_SIZE = 'BASIC_A2'
-_POOL_VM_SIZE = 'Standard_H16r'
-#_POOL_VM_SIZE = 'STANDARD_A8'
+#_POOL_VM_SIZE = 'Standard_H16r'
+_POOL_VM_SIZE = 'STANDARD_A8'
 # _NODE_OS_PUBLISHER = 'Canonical'
 _NODE_OS_PUBLISHER = 'Openlogic'
 _NODE_OS_OFFER = 'CentOS-HPC'
-_NODE_OS_SKU = '7.3'
+_NODE_OS_SKU = '7'
+_USE_RDMA = 0
 
 _JOB_ID = 'Job{}'.format(datetime.datetime.now().strftime("-%y%m%d-%H%M%S"))
 
-_TUTORIAL_TASK_FILE = 'task.py'
-_TUTORIAL_EXECUTABLE = 'fds.zip'
-_TUTORIAL_MPI = 'mpi_small.zip'
-_TUTORIAL_SCRIPT = 'runscript.sh'
-_TUTORIAL_PREPSCRIPT = 'prepscript.sh'
+_TASK_FILE = 'task.py'
+_SCRIPT = 'runscript.sh'
+_PREPSCRIPT = 'prepscript.sh'
 _MESH_COUNT = '1'
 _OPENMP_COUNT = '1'
 
@@ -223,39 +222,38 @@ def create_pool(batch_service_client, pool_id,
     # on each node as it joins the pool, and when it's rebooted or re-imaged.
     # We use the start task to prep the node for running our task script.
     task_commands = [
-        # Copy the python_tutorial_task.py script to the "shared" directory
+        # Copy the python_task.py script to the "shared" directory
         # that all tasks that run on the node have access to. Note that
         # we are using the -p flag with cp to preserve the file uid/gid,
         # otherwise since this start task is run as an admin, it would not
         # be accessible by tasks run as a non-admin user.
-        'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_TUTORIAL_TASK_FILE),
-        #'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_TUTORIAL_EXECUTABLE),
-        #'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_TUTORIAL_MPI),
-        'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_TUTORIAL_SCRIPT),
-        'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_TUTORIAL_PREPSCRIPT),
+        'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_TASK_FILE),
+        #'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_EXECUTABLE),
+        #'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_MPI),
+        'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_SCRIPT),
+        'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_PREPSCRIPT),
         #'sudo yum -y update',
         'sudo yum -y install nfs-utils',
-        ## Install pip
+        # Install pip
         'sudo yum -y install epel-release',
         'sudo yum -y install python-pip',
         'sudo yum -y install htop',
         'sudo pip install azure-storage==0.32.0',
         'mkdir -p /home/myuser/.ssh',
         'chmod 700 /home/myuser/.ssh',
-        'echo "StrictHostKeyChecking no" >> /home/myuser/.ssh/config',  
+        'echo "StrictHostKeyChecking no" >> /home/myuser/.ssh/config',
         'chmod 600 /home/myuser/.ssh/config',
         'export APP_INSIGHTS_APP_ID="{}"'.format(_APP_INSIGHTS_APP_ID),
-        'echo "APP_INSIGHTS_INSTRUMENTATION_KEY={}" >> /home/myuser/.bashrc'.format(_APP_INSIGHTS_INSTRUMENTATION_KEY),
-        'echo "APP_INSIGHTS_APP_ID={}" >> /home/myuser/.bashrc'.format(_APP_INSIGHTS_APP_ID),
-        'export APP_INSIGHTS_INSTRUMENTATION_KEY="{}"'.format(_APP_INSIGHTS_INSTRUMENTATION_KEY),
-        'chmod +x $AZ_BATCH_NODE_SHARED_DIR/{}'.format(_TUTORIAL_SCRIPT),
-        'chmod +x $AZ_BATCH_NODE_SHARED_DIR/{}'.format(_TUTORIAL_PREPSCRIPT),
+        'export APP_INSIGHTS_INSTRUMENTATION_KEY="{}"'.format(
+            _APP_INSIGHTS_INSTRUMENTATION_KEY),
+        'chmod +x $AZ_BATCH_NODE_SHARED_DIR/{}'.format(_SCRIPT),
+        'chmod +x $AZ_BATCH_NODE_SHARED_DIR/{}'.format(_PREPSCRIPT),
         'wget  https://raw.githubusercontent.com/Azure/batch-insights/master/centos.sh',
-        'sudo bash ./centos.sh',
+        'sudo -E bash ./centos.sh',
         'export HOME=$AZ_BATCH_NODE_SHARED_DIR',
         'cd $AZ_BATCH_APP_PACKAGE_fds_bundle',
         './FDS_6.6.0-SMV_6.6.0_linux64.sh y'
-        #,
+        # ,
         #'sudo echo "$AZ_BATCH_NODE_SHARED_DIR/FDS/FDS6/bin/FDS6VARS.sh" >> /etc/bashrc'
         #'bash ./*.sh y'
         # Install pip
@@ -263,12 +261,12 @@ def create_pool(batch_service_client, pool_id,
         # Install the azure-storage module so that the task script can access
         # Azure Blob storage, pre-cryptography version
         # 'pip install azure-storage==0.32.0'
-	# make sure MPI is allowed to run in Ubuntu, without this, this is seen as a security attack....
-	# 'sudo sed -i -e "s/kernel.yama.ptrace_scope = 1/kernel.yama.ptrace_scope = 0/" /etc/sysctl.d/10-ptrace.conf',
-	# 'sudo sysctl -w kernel.yama.ptrace_scope=0',
-	# 'bash -c sudo "echo \"*           hard    memlock         unlimited\" >> /etc/security/limits.conf"',
-	# 'bash -c sudo "echo \"*           soft    memlock         unlimited\" >> /etc/security/limits.conf"',
-	]
+        # make sure MPI is allowed to run in Ubuntu, without this, this is seen as a security attack....
+        # 'sudo sed -i -e "s/kernel.yama.ptrace_scope = 1/kernel.yama.ptrace_scope = 0/" /etc/sysctl.d/10-ptrace.conf',
+        # 'sudo sysctl -w kernel.yama.ptrace_scope=0',
+        # 'bash -c sudo "echo \"*           hard    memlock         unlimited\" >> /etc/security/limits.conf"',
+        # 'bash -c sudo "echo \"*           soft    memlock         unlimited\" >> /etc/security/limits.conf"',
+    ]
 
     # Get the node agent SKU and image reference for the virtual machine
     # configuration.
@@ -287,19 +285,19 @@ def create_pool(batch_service_client, pool_id,
             node_agent_sku_id=sku_to_use),
         vm_size=_POOL_VM_SIZE,
         target_dedicated_nodes=_POOL_NODE_COUNT,
-	    enable_inter_node_communication=1,
+        enable_inter_node_communication=1,
         start_task=batch.models.StartTask(
             command_line=common.helpers.wrap_commands_in_shell('linux',
                                                                task_commands),
             environment_settings=[batch.models.EnvironmentSetting('APP_INSIGHTS_APP_ID', value=_APP_INSIGHTS_APP_ID),
                                   batch.models.EnvironmentSetting('APP_INSIGHTS_INSTRUMENTATION_KEY', value=_APP_INSIGHTS_INSTRUMENTATION_KEY)],
-	        user_identity=batch.models.UserIdentity(user_name='myuser'),
+            user_identity=batch.models.UserIdentity(user_name='myuser'),
             wait_for_success=True,
             resource_files=resource_files),
         application_package_references=[batch.models.ApplicationPackageReference(
             'fds_bundle', version='6.6.0')],
-	    user_accounts=[batch.models.UserAccount(
-	        'myuser', 'makethisaverysecureandrandompassword', elevation_level='admin', 
+        user_accounts=[batch.models.UserAccount(
+            'myuser', 'makethisaverysecureandrandompassword', elevation_level='admin',
             linux_user_configuration=None)],
     )
 
@@ -349,8 +347,8 @@ def add_tasks(batch_service_client, job_id, input_files,
     """
 
     task_commands = [
-	'bash $AZ_BATCH_NODE_SHARED_DIR/{}'.format(_TUTORIAL_PREPSCRIPT)
-	]
+        'bash $AZ_BATCH_NODE_SHARED_DIR/{}'.format(_PREPSCRIPT)
+    ]
 
     print('Adding {} tasks to job [{}]...'.format(len(input_files), job_id))
 
@@ -359,27 +357,28 @@ def add_tasks(batch_service_client, job_id, input_files,
     for idx, input_file in enumerate(input_files):
 
         command = ['python $AZ_BATCH_NODE_SHARED_DIR/{} '
-                   '--filepath {} --mesh {} --openmp {} --storageaccount {} '
+                   '--filepath {} --mpiprocs {} --openmp {} --rdma {} --storageaccount {} '
                    '--storagecontainer {} --sastoken "{}"'.format(
-                       _TUTORIAL_TASK_FILE,
+                       _TASK_FILE,
                        input_file.file_path,
-                       _MESH_COUNT,
+                       _MPI_PROCESSORS,
                        _OPENMP_COUNT,
+                       _USE_RDMA,
                        _STORAGE_ACCOUNT_NAME,
                        output_container_name,
                        output_container_sas_token)]
-
+                       
         tasks.append(batch.models.TaskAddParameter(
-                'topNtask{}'.format(idx),
-                common.helpers.wrap_commands_in_shell('linux', command),
-                resource_files=[input_file],
-		        multi_instance_settings=(batch.models.MultiInstanceSettings(
-			        coordination_command_line=common.helpers.wrap_commands_in_shell(
-			            'linux', task_commands),
-			        number_of_instances=_POOL_NODE_COUNT)
-			    ),
-		        user_identity=batch.models.UserIdentity(user_name='myuser'),
-            )
+            'topNtask{}'.format(idx),
+            common.helpers.wrap_commands_in_shell('linux', command),
+            resource_files=[input_file],
+            multi_instance_settings=(batch.models.MultiInstanceSettings(
+                coordination_command_line=common.helpers.wrap_commands_in_shell(
+                    'linux', task_commands),
+                number_of_instances=_POOL_NODE_COUNT)
+            ),
+            user_identity=batch.models.UserIdentity(user_name='myuser'),
+        )
         )
 
     batch_service_client.task.add_collection(job_id, tasks)
@@ -451,46 +450,57 @@ def download_blobs_from_container(block_blob_client,
 
 
 def main(argv):
-   inputfile = ''
-   meshcount = 1
-   openMPcount = 1
-   nodes = 2
-   # outputfile = ''
-   try:
-      opts, args = getopt.getopt(
-          argv, "hi:n:m:p:", ["inputfile=", "nodes=", "mesh=", "openmp="])
-   except getopt.GetoptError:
-      print(
-          'submit_batch.py -i <inputfile> [-n <nodecount> -m <meshcount> -p <openMPcount>]')
-      sys.exit(2)
-   for opt, arg in opts:
-      #print('opt:{}\narg:{}'.format(opt,arg))
-      if opt == '-h':
-         print(
-             'submit_batch.py -i <inputfile> [-n <nodecount> -m <meshcount> -p <openMPcount>]')
-         sys.exit()
-      elif opt in ("-i", "--inputfile"):
-         inputfile = arg
-      elif opt in ("-n", "--nodes"):
-         nodes = arg
-      elif opt in ("-m", "--mesh"):
-         meshcount = arg
-      elif opt in ("-p", "--openmp"):
-         openMPcount = arg
-        
-   if inputfile == '':
-     print(
-         "please provide an inputfile: submit_batch.py -i <inputfile> [-n <nodecount> -m <meshcount>  -p <openMPcount>]")
-     sys.exit()
-   print('Input file is ', inputfile)
-   print('Params: \nnodes:{}\nmesh={}\nopenmp={}'.format(nodes,meshcount,openMPcount))
-   print()
-   return inputfile, nodes, meshcount, openMPcount
+    inputfile = ''
+    mpicount = 1
+    openMPcount = 1
+    nodes = 2
+    rdma = 0
+    vmsku = 'STANDARD_A8'
+    os_offer = 'CentOS'
+    # outputfile = ''
+    helpline = "submit_batch.py -i <inputfile> [-n <nodecount> -m <mpicount>  -p <openMPcount> -r (0|1) -v <vmSKU>]"
 
+    try:
+        opts, args = getopt.getopt(
+            argv, "hi:n:m:p:r:v:", ["inputfile=", "nodes=", "mpicount=", "openmp=", "rdma=", "vmsku="])
+    except getopt.GetoptError:
+        print(
+            'submit_batch.py -i <inputfile> [-n <nodecount> -m <meshcount> -p <openMPcount>]')
+        sys.exit(2)
+    for opt, arg in opts:
+        # print('opt:{}\narg:{}'.format(opt,arg))
+        if opt == '-h':
+            print(helpline)
+            print(
+                f'Defaults\n\t-n {nodes} as nodecount\n\t-m {mpicount} as mpi processes count\n\t-p {openMPcount} as OpenMPcount\n\tNo RDMA\n\t-v {vmsku} as vmSKU')
+            sys.exit()
+        elif opt in ("-i", "--inputfile"):
+            inputfile = arg
+        elif opt in ("-n", "--nodes"):
+            nodes = arg
+        elif opt in ("-m", "--mpicount"):
+            mpicount = arg
+        elif opt in ("-p", "--openmp"):
+            openMPcount = arg
+        elif opt in ("-r", "--rdma"):
+            rdma = 1
+            os_offer = 'CentOS-HPC'
+        elif opt in ("-v", "--vmsku"):
+            vmsku = arg
+
+    if inputfile == '':
+        print(helpline)
+        sys.exit()
+    # print('Input file is ', inputfile)
+    # print('Params: \nnodes:{}\nmesh={}\nopenmp={}'.format(
+    #     nodes, mpicount, openMPcount))
+    # print()
+    return inputfile, nodes, mpicount, openMPcount, rdma, os_offer, vmsku
 
 if __name__ == '__main__':
 
-    inputfile, _POOL_NODE_COUNT, _MESH_COUNT, _OPENMP_COUNT = main(sys.argv[1:])
+    inputfile, _POOL_NODE_COUNT, _MPI_PROCESSORS, _OPENMP_COUNT, _USE_RDMA, _NODE_OS_OFFER, _POOL_VM_SIZE = main(
+        sys.argv[1:])
     start_time = datetime.datetime.now().replace(microsecond=0)
     print('Sample start: {}'.format(start_time))
     print()
@@ -506,7 +516,8 @@ if __name__ == '__main__':
     _STORAGE_ACCOUNT_NAME = global_config.get('Storage', 'storageaccountname')
 
     _APP_INSIGHTS_APP_ID = global_config.get('AppInsights', 'applicationid')
-    _APP_INSIGHTS_INSTRUMENTATION_KEY = global_config.get('AppInsights', 'instrumentationkey')
+    _APP_INSIGHTS_INSTRUMENTATION_KEY = global_config.get(
+        'AppInsights', 'instrumentationkey')
     # storage_account_suffix = global_config.get('Storage', 'storageaccountsuffix')
 
     # Create the blob client, for use in obtaining references to
@@ -518,9 +529,12 @@ if __name__ == '__main__':
     print('Created blob client')
     # Use the blob client to create the containers in Azure Storage if they
     # don't yet exist.
-    app_container_name = 'application'
-    input_container_name = 'input'
-    output_container_name = 'output{}'.format(datetime.datetime.now().strftime("-%y%m%d-%H%M%S"))
+    app_container_name = 'application{}'.format(
+        datetime.datetime.now().strftime("-%y%m%d-%H%M%S"))
+    input_container_name = 'input{}'.format(
+        datetime.datetime.now().strftime("-%y%m%d-%H%M%S"))
+    output_container_name = 'output{}'.format(
+        datetime.datetime.now().strftime("-%y%m%d-%H%M%S"))
 #    print('Containers: \n{}\n{}\n{}\n'.format(app_container_name,input_container_name,output_container_name))
 #    print()
     blob_client.create_container(app_container_name, fail_on_exist=False)
@@ -529,11 +543,10 @@ if __name__ == '__main__':
 
     # Paths to the task script. This script will be executed by the tasks that
     # run on the compute nodes.
-    application_file_paths = [os.path.realpath('./application/{}'.format(_TUTORIAL_TASK_FILE)),
-	#		      os.path.realpath('./application/{}'.format(_TUTORIAL_EXECUTABLE)),
-	#		      os.path.realpath('./application/{}'.format(_TUTORIAL_MPI)),
-			      os.path.realpath('./application/{}'.format(_TUTORIAL_SCRIPT)),
-			      os.path.realpath('./application/{}'.format(_TUTORIAL_PREPSCRIPT))]
+    application_file_paths = [os.path.realpath('./application/{}'.format(_TASK_FILE)),
+                              os.path.realpath(
+                                  './application/{}'.format(_SCRIPT)),
+                              os.path.realpath('./application/{}'.format(_PREPSCRIPT))]
 
     # The collection of data files that are to be processed by the tasks.
     input_file_paths = [os.path.realpath(inputfile)]
@@ -543,10 +556,10 @@ if __name__ == '__main__':
     # compute nodes.
     starttask_time = datetime.datetime.now().replace(microsecond=0)
     print('Uploading app files start: {}'.format(starttask_time))
-    application_files=[
+    application_files = [
         upload_file_to_container(blob_client, app_container_name, file_path)
         for file_path in application_file_paths]
-    finishtask_time=datetime.datetime.now().replace(microsecond=0)
+    finishtask_time = datetime.datetime.now().replace(microsecond=0)
     print()
     print('Uploading app files end: {}'.format(finishtask_time))
     print('Elapsed time: {}'.format(finishtask_time - starttask_time))
@@ -554,28 +567,29 @@ if __name__ == '__main__':
 
     # Upload the data files. This is the data that will be processed by each of
     # the tasks executed on the compute nodes in the pool.
-    starttask_time=datetime.datetime.now().replace(microsecond=0)
+    starttask_time = datetime.datetime.now().replace(microsecond=0)
     print('Uploading data files start: {}'.format(starttask_time))
-    input_files=[
+    input_files = [
         upload_file_to_container(blob_client, input_container_name, file_path)
         for file_path in input_file_paths]
+    finishtask_time = datetime.datetime.now().replace(microsecond=0)
     print()
     print('Uploading data files end: {}'.format(finishtask_time))
     print('Elapsed time: {}'.format(finishtask_time - starttask_time))
     print()
     # Obtain a shared access signature that provides write access to the output
     # container to which the tasks will upload their output.
-    output_container_sas_token=get_container_sas_token(
+    output_container_sas_token = get_container_sas_token(
         blob_client,
         output_container_name,
         azureblob.BlobPermissions.WRITE)
 
     # Create a Batch service client. We'll now be interacting with the Batch
     # service in addition to Storage
-    credentials=batchauth.SharedKeyCredentials(_BATCH_ACCOUNT_NAME,
+    credentials = batchauth.SharedKeyCredentials(_BATCH_ACCOUNT_NAME,
                                                  _BATCH_ACCOUNT_KEY)
 
-    batch_client=batch.BatchServiceClient(
+    batch_client = batch.BatchServiceClient(
         credentials,
         base_url=_BATCH_ACCOUNT_URL)
 
@@ -584,7 +598,7 @@ if __name__ == '__main__':
     # start task, which is executed each time a node first joins the pool (or
     # is rebooted or re-imaged).
 
-    starttask_time=datetime.datetime.now().replace(microsecond=0)
+    starttask_time = datetime.datetime.now().replace(microsecond=0)
     print('Creating pool start: {}'.format(starttask_time))
     create_pool(batch_client,
                 _POOL_ID,
@@ -592,20 +606,21 @@ if __name__ == '__main__':
                 _NODE_OS_PUBLISHER,
                 _NODE_OS_OFFER,
                 _NODE_OS_SKU)
+    finishtask_time = datetime.datetime.now().replace(microsecond=0)
     print()
     print('Creating pool end: {}'.format(finishtask_time))
     print('Elapsed time: {}'.format(finishtask_time - starttask_time))
     print()
     # Create the job that will run the tasks.
 
-    starttask_time=datetime.datetime.now().replace(microsecond=0)
+    starttask_time = datetime.datetime.now().replace(microsecond=0)
     print('Creating job start: {}'.format(starttask_time))
     create_job(batch_client, _JOB_ID, _POOL_ID)
 
     # Add the tasks to the job. We need to supply a container shared access
     # signature (SAS) token for the tasks so that they can upload their output
     # to Azure Storage.
-    starttask_time=datetime.datetime.now().replace(microsecond=0)
+    starttask_time = datetime.datetime.now().replace(microsecond=0)
     print('Adding tasks start: {}'.format(starttask_time))
 
     add_tasks(batch_client,
@@ -615,7 +630,7 @@ if __name__ == '__main__':
               output_container_sas_token)
 
     # Pause execution until tasks reach Completed state.
-    starttask_time=datetime.datetime.now().replace(microsecond=0)
+    starttask_time = datetime.datetime.now().replace(microsecond=0)
     print('Waiting tasks start: {}'.format(starttask_time))
 
     wait_for_tasks_to_complete(batch_client,
@@ -641,7 +656,7 @@ if __name__ == '__main__':
         blob_client.delete_container(output_container_name)
 
     # Print out some timing info
-    end_time=datetime.datetime.now().replace(microsecond=0)
+    end_time = datetime.datetime.now().replace(microsecond=0)
     print()
     print('Sample end: {}'.format(end_time))
     print('Elapsed time: {}'.format(end_time - start_time))

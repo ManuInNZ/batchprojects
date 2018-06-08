@@ -2,3 +2,4 @@
 result/
 benchmark/
 pythonfdsmpi-centos/configuration.cfg
+**/*.pyc
