@@ -75,8 +75,8 @@ _POOL_NODE_COUNT = 2
 _POOL_VM_SIZE = 'STANDARD_A8'
 # _NODE_OS_PUBLISHER = 'Canonical'
 _NODE_OS_PUBLISHER = 'Openlogic'
-_NODE_OS_OFFER = 'CentOS-HPC'
-_NODE_OS_SKU = '7'
+_NODE_OS_OFFER = 'CentOS'
+_NODE_OS_SKU = '7.4'
 _USE_RDMA = 0
 
 _JOB_ID = 'Job{}'.format(datetime.datetime.now().strftime("-%y%m%d-%H%M%S"))
@@ -367,9 +367,9 @@ def add_tasks(batch_service_client, job_id, input_files,
                        _STORAGE_ACCOUNT_NAME,
                        output_container_name,
                        output_container_sas_token)]
-                       
+
         tasks.append(batch.models.TaskAddParameter(
-            'topNtask{}'.format(idx),
+            'FDS',
             common.helpers.wrap_commands_in_shell('linux', command),
             resource_files=[input_file],
             multi_instance_settings=(batch.models.MultiInstanceSettings(
@@ -464,8 +464,7 @@ def main(argv):
         opts, args = getopt.getopt(
             argv, "hi:n:m:p:r:v:", ["inputfile=", "nodes=", "mpicount=", "openmp=", "rdma=", "vmsku="])
     except getopt.GetoptError:
-        print(
-            'submit_batch.py -i <inputfile> [-n <nodecount> -m <meshcount> -p <openMPcount>]')
+        print(helpline)
         sys.exit(2)
     for opt, arg in opts:
         # print('opt:{}\narg:{}'.format(opt,arg))
@@ -485,6 +484,7 @@ def main(argv):
         elif opt in ("-r", "--rdma"):
             rdma = 1
             os_offer = 'CentOS-HPC'
+            _NODE_OS_SKU = '7.3'
         elif opt in ("-v", "--vmsku"):
             vmsku = arg
 
@@ -637,22 +637,37 @@ if __name__ == '__main__':
                                _JOB_ID,
                                datetime.timedelta(days=30))
 
+    finishtask_time = datetime.datetime.now().replace(microsecond=0)
+    print()
+    print('Waiting tasks end: {}'.format(finishtask_time))
+    print('Elapsed time: {}'.format(finishtask_time - starttask_time))
+    print()
+
     print("  Success! All tasks reached the 'Completed' state within the "
           "specified timeout period.")
+
+    # Clean up Batch resources (if the user so chooses).
+    if query_yes_no('Delete job?') == 'yes':
+        batch_client.job.delete(_JOB_ID)
+    # batch_client.job.delete(_JOB_ID)
+
+    if query_yes_no('Delete pool?') == 'yes':
+        batch_client.pool.delete(_POOL_ID)
 
     # Download the task output files from the output Storage container to a
     # local directory. Note that we could have also downloaded the output
     # files directly from the compute nodes themselves.
-    download_blobs_from_container(blob_client,
-                                  output_container_name,
-                                  os.path.expanduser('./result/'))
+    if query_yes_no('Dowload all results?', default="no"):
+        download_blobs_from_container(blob_client,
+                                      output_container_name,
+                                      os.path.expanduser('./result/'))
 
     # Clean up storage resources
     print('Deleting containers...')
     if query_yes_no('Delete appl and input storage containers?') == 'yes':
         blob_client.delete_container(input_container_name)
         blob_client.delete_container(app_container_name)
-    if query_yes_no('Delete output storage containers?') == 'yes':
+    if query_yes_no('Delete output storage containers?', default="no") == 'yes':
         blob_client.delete_container(output_container_name)
 
     # Print out some timing info
@@ -661,15 +676,6 @@ if __name__ == '__main__':
     print('Sample end: {}'.format(end_time))
     print('Elapsed time: {}'.format(end_time - start_time))
     print()
-
-    # Clean up Batch resources (if the user so chooses).
-    if query_yes_no('Delete job?') == 'yes':
-        batch_client.job.delete(_JOB_ID)
-    # batch_client.job.delete(_JOB_ID)
-
-    # if query_yes_no('Delete pool?') == 'yes':
-    #    batch_client.pool.delete(_POOL_ID)
-    batch_client.pool.delete(_POOL_ID)
 
     # print()
     # input('Press ENTER to exit...')

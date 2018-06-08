@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 #Command script to setup NFS share on multiple nodes (with one node being server and remaining nodes as client) as Azure Batch multiinstance task
 echo 'Prepping'
 echo $AZ_BATCH_TASK_SHARED_DIR
