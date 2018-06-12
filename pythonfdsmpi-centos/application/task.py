@@ -92,7 +92,7 @@ if __name__ == '__main__':
                                       output_file,
                                       output_file_path)
 
-    filelist = [os.path.realpath(input_project + 'out'),
+    filelist = [os.path.realpath(input_project[:-4] + '.out'),
                 os.path.realpath('stderr.txt'),
                 os.path.realpath('stdout.txt')]
 

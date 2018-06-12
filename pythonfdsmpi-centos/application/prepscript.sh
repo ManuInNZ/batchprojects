@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 #Command script to setup NFS share on multiple nodes (with one node being server and remaining nodes as client) as Azure Batch multiinstance task
 echo 'Prepping'
 echo $AZ_BATCH_TASK_SHARED_DIR
@@ -9,10 +9,10 @@ export master_addr=${master_addr_port[0]}
 export mnt=$AZ_BATCH_TASK_SHARED_DIR
 echo $master_addr
 echo $mnt
-# mkdir -p /home/myuser/.ssh
-# `` chmod 700 /home/myuser/.ssh
-#  echo 'StrictHostKeyChecking no' >> /home/myuser/.ssh/config
-#  chmod 600 /home/myuser/.ssh/config
+# mkdir -p /home/fdsuser/.ssh
+# chmod 700 /home/fdsuser/.ssh
+# echo 'StrictHostKeyChecking no' >> /home/fdsuser/.ssh/config
+#  chmod 600 /home/fdsuser/.ssh/config
 # sudo yum -y install nfs-utils
 ## Install pip
 #sudo yum -y install epel-release
@@ -31,9 +31,9 @@ echo $mnt
 #source $AZ_BATCH_NODE_SHARED_DIR/FDS/FDS6/bin/FDS6VARS.sh
 if $AZ_BATCH_IS_CURRENT_NODE_MASTER; then
     # is head node, will be nfs server, will download and prepare all the input data in nfs share dir
-    ssh-keygen -t rsa -b 2048 -N "" -f /home/myuser/.ssh/id_rsa
-    cat /home/myuser/.ssh/id_rsa.pub >> /home/myuser/.ssh/authorized_keys
-    chmod 600 /home/myuser/.ssh/authorized_keys
+    ssh-keygen -t rsa -b 2048 -N "" -f /home/fdsuser/.ssh/id_rsa
+    cat /home/fdsuser/.ssh/id_rsa.pub >> /home/fdsuser/.ssh/authorized_keys
+    chmod 600 /home/fdsuser/.ssh/authorized_keys
     ls
     echo "I am master node and will share"
     mkdir $mnt/share
@@ -43,7 +43,7 @@ if $AZ_BATCH_IS_CURRENT_NODE_MASTER; then
     sudo  exportfs -v
     cd $mnt/share
     cp $AZ_BATCH_TASK_WORKING_DIR/* .
-    cp /home/myuser/.ssh/id_rsa.pub .
+    cp /home/fdsuser/.ssh/id_rsa.pub .
 else
     # all other nodes are nfs clients, will connect with nfs server on nfs share dir
     echo I am client node and will mount
@@ -59,10 +59,10 @@ else
         if [ $? -eq 0 ]; then
             break
         else
-            sleep 10
+            sleep 5s
         fi
     done
-    cat $mnt/share/id_rsa.pub > /home/myuser/.ssh/authorized_keys
-    chmod 600 /home/myuser/.ssh/authorized_keys
+    cat $mnt/share/id_rsa.pub > /home/fdsuser/.ssh/authorized_keys
+    chmod 600 /home/fdsuser/.ssh/authorized_keys
 fi
 exit
