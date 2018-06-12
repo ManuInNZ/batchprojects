@@ -239,10 +239,10 @@ def create_pool(batch_service_client, pool_id,
         'sudo yum -y install python-pip',
         'sudo yum -y install htop',
         'sudo pip install azure-storage==0.32.0',
-        'mkdir -p /home/myuser/.ssh',
-        'chmod 700 /home/myuser/.ssh',
-        'echo "StrictHostKeyChecking no" >> /home/myuser/.ssh/config',
-        'chmod 600 /home/myuser/.ssh/config',
+        'mkdir -p /home/fdsuser/.ssh',
+        'chmod 700 /home/fdsuser/.ssh',
+        'echo "StrictHostKeyChecking no" >> /home/fdsuser/.ssh/config',
+        'chmod 600 /home/fdsuser/.ssh/config',
         'export APP_INSIGHTS_APP_ID="{}"'.format(_APP_INSIGHTS_APP_ID),
         'export APP_INSIGHTS_INSTRUMENTATION_KEY="{}"'.format(
             _APP_INSIGHTS_INSTRUMENTATION_KEY),
@@ -252,20 +252,12 @@ def create_pool(batch_service_client, pool_id,
         'sudo -E bash ./centos.sh',
         'export HOME=$AZ_BATCH_NODE_SHARED_DIR',
         'cd $AZ_BATCH_APP_PACKAGE_fds_bundle',
-        './FDS_6.6.0-SMV_6.6.0_linux64.sh y'
-        # ,
-        #'sudo echo "$AZ_BATCH_NODE_SHARED_DIR/FDS/FDS6/bin/FDS6VARS.sh" >> /etc/bashrc'
-        #'bash ./*.sh y'
-        # Install pip
-        # 'curl -fSsL https://bootstrap.pypa.io/get-pip.py | sudo python',
-        # Install the azure-storage module so that the task script can access
-        # Azure Blob storage, pre-cryptography version
-        # 'pip install azure-storage==0.32.0'
+        './FDS_6.6.0-SMV_6.6.0_linux64.sh y',
         # make sure MPI is allowed to run in Ubuntu, without this, this is seen as a security attack....
         # 'sudo sed -i -e "s/kernel.yama.ptrace_scope = 1/kernel.yama.ptrace_scope = 0/" /etc/sysctl.d/10-ptrace.conf',
         # 'sudo sysctl -w kernel.yama.ptrace_scope=0',
-        # 'bash -c sudo "echo \"*           hard    memlock         unlimited\" >> /etc/security/limits.conf"',
-        # 'bash -c sudo "echo \"*           soft    memlock         unlimited\" >> /etc/security/limits.conf"',
+        'bash -c "sudo echo \"*           hard    memlock         unlimited\" >> /etc/security/limits.conf"',
+        'bash -c "sudo echo \"*           soft    memlock         unlimited\" >> /etc/security/limits.conf"'
     ]
 
     # Get the node agent SKU and image reference for the virtual machine
@@ -291,13 +283,13 @@ def create_pool(batch_service_client, pool_id,
                                                                task_commands),
             environment_settings=[batch.models.EnvironmentSetting('APP_INSIGHTS_APP_ID', value=_APP_INSIGHTS_APP_ID),
                                   batch.models.EnvironmentSetting('APP_INSIGHTS_INSTRUMENTATION_KEY', value=_APP_INSIGHTS_INSTRUMENTATION_KEY)],
-            user_identity=batch.models.UserIdentity(user_name='myuser'),
+            user_identity=batch.models.UserIdentity(user_name='fdsuser'),
             wait_for_success=True,
             resource_files=resource_files),
         application_package_references=[batch.models.ApplicationPackageReference(
             'fds_bundle', version='6.6.0')],
         user_accounts=[batch.models.UserAccount(
-            'myuser', 'makethisaverysecureandrandompassword', elevation_level='admin',
+            'fdsuser', 'makethisaverysecureandrandompassword', elevation_level='admin',
             linux_user_configuration=None)],
     )
 
@@ -377,7 +369,7 @@ def add_tasks(batch_service_client, job_id, input_files,
                     'linux', task_commands),
                 number_of_instances=_POOL_NODE_COUNT)
             ),
-            user_identity=batch.models.UserIdentity(user_name='myuser'),
+            user_identity=batch.models.UserIdentity(user_name='fdsuser'),
         )
         )
 
@@ -429,6 +421,9 @@ def download_blobs_from_container(block_blob_client,
      download files.
     :param directory_path: The local directory to which to download the files.
     """
+    if not os.path.exists(directory_path) :
+            os.makedirs(directory_path)
+
     print('Downloading all files from container [{}]...'.format(
         container_name))
 
@@ -482,19 +477,16 @@ def main(argv):
         elif opt in ("-p", "--openmp"):
             openMPcount = arg
         elif opt in ("-r", "--rdma"):
-            rdma = 1
-            os_offer = 'CentOS-HPC'
-            _NODE_OS_SKU = '7.3'
+            rdma = int(arg)
+            if rdma == 1:
+                os_offer = 'CentOS-HPC'
         elif opt in ("-v", "--vmsku"):
             vmsku = arg
 
     if inputfile == '':
         print(helpline)
         sys.exit()
-    # print('Input file is ', inputfile)
-    # print('Params: \nnodes:{}\nmesh={}\nopenmp={}'.format(
-    #     nodes, mpicount, openMPcount))
-    # print()
+
     return inputfile, nodes, mpicount, openMPcount, rdma, os_offer, vmsku
 
 if __name__ == '__main__':
@@ -647,20 +639,20 @@ if __name__ == '__main__':
           "specified timeout period.")
 
     # Clean up Batch resources (if the user so chooses).
-    if query_yes_no('Delete job?') == 'yes':
-        batch_client.job.delete(_JOB_ID)
-    # batch_client.job.delete(_JOB_ID)
-
     if query_yes_no('Delete pool?') == 'yes':
         batch_client.pool.delete(_POOL_ID)
+
+    if query_yes_no('Delete job?') == 'yes':
+        batch_client.job.delete(_JOB_ID)
 
     # Download the task output files from the output Storage container to a
     # local directory. Note that we could have also downloaded the output
     # files directly from the compute nodes themselves.
-    if query_yes_no('Dowload all results?', default="no"):
+    if query_yes_no('Dowload all results?', default="no") == 'yes':
+        directory = os.path.expanduser('./result/' + _JOB_ID)
         download_blobs_from_container(blob_client,
                                       output_container_name,
-                                      os.path.expanduser('./result/'))
+                                      directory)
 
     # Clean up storage resources
     print('Deleting containers...')

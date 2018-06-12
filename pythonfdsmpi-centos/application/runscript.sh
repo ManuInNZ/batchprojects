@@ -24,15 +24,16 @@ echo "# project: $PROJECT_NAME $SHORT_NAME"
 echo "# number of MPI_PROCESSORSes:" $MPI_PROCESSORS
 echo "# number of openMP:" $INPUTOPENMP
 echo "use RDMA (1=True / 0=False):" $USE_RDMA
+echo "nodes list(AZ_BATCH_HOST_LIST): $AZ_BATCH_HOST_LIST"
 
 
-export LD_LIBRARY_PATH=$AZ_BATCH_NODE_SHARED_DIR:$LD_LIBRARY_PATH
+#export LD_LIBRARY_PATH=$AZ_BATCH_NODE_SHARED_DIR:$LD_LIBRARY_PATH
 export PATH=./:$PATH
 
 fdsvars=$(find $AZ_BATCH_NODE_SHARED_DIR -name FDS6VARS.sh)
 source $fdsvars
 export I_MPI_FABRICS=tcp  #no rdma so using tcp here...
-
+echo "fdsvars $fdsvars"
 
 cd $AZ_BATCH_TASK_SHARED_DIR
 cd share
@@ -49,16 +50,29 @@ then
     source $mpivars
     export MPI_ROOT=$I_MPI_ROOT
     export OMP_NUM_THREADS=$INPUTOPENMP
-
+    echo "#### env #################################################################"
+    env
+    echo "#### set #################################################################"
+    set
+    echo "##########################################################################"
+    echo "Executing mpirun"
+    echo "mpirun -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS fds $PROJECT_NAME"
     mpirun -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS fds $PROJECT_NAME
 else
     export OMP_NUM_THREADS=$INPUTOPENMP
-    HOSTS_LIST=$(echo $AZ_BATCH_HOST_LIST|sed 's/,/ /g')
+    # HOSTS_LIST=$(echo $AZ_BATCH_HOST_LIST|sed 's/,/ /g')
+    echo "#### env #################################################################"
+    env
+    echo "#### set #################################################################"
+    set
+    echo "##########################################################################"
+    echo "Executing mpiexec"
+    echo "mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS fds $PROJECT_NAME"
     mpiexec -hosts $HOSTS_LIST -np $MPI_PROCESSORS fds $PROJECT_NAME 
 fi
 
 zip fds_results.zip * ../stderr.txt ../stdout.txt
 cp fds_results.zip ../wd/
-cp *.out ../wd/$PROJECT_NAME.out
+cp *.out ../wd/$SHORT_NAME\.out
 cp ../stderr.txt ../wd/
 cp ../stdout.txt ../wd/
