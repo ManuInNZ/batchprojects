@@ -34,11 +34,11 @@ fdsvars=$(find $AZ_BATCH_NODE_SHARED_DIR -name FDS6VARS.sh)
 source $fdsvars
 export I_MPI_FABRICS=tcp  #no rdma so using tcp here...
 echo "fdsvars $fdsvars"
-
+ulimit -s unlimited
 cd $AZ_BATCH_TASK_SHARED_DIR
 cd share
-cp -p $AZ_BATCH_NODE_SHARED_DIR/* .
-
+cp -rp $AZ_BATCH_NODE_SHARED_DIR/* .
+ls -lh
 if [ $USE_RDMA -eq 1 ]
 then
     export I_MPI_FABRICS=shm:dapl  #  using rdma here...
@@ -68,7 +68,7 @@ else
     echo "##########################################################################"
     echo "Executing mpiexec"
     echo "mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS fds $PROJECT_NAME"
-    mpiexec -hosts $HOSTS_LIST -np $MPI_PROCESSORS fds $PROJECT_NAME 
+    mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS fds $PROJECT_NAME 
 fi
 
 zip fds_results.zip * ../stderr.txt ../stdout.txt

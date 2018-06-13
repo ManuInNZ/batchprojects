@@ -256,9 +256,14 @@ def create_pool(batch_service_client, pool_id,
         # make sure MPI is allowed to run in Ubuntu, without this, this is seen as a security attack....
         # 'sudo sed -i -e "s/kernel.yama.ptrace_scope = 1/kernel.yama.ptrace_scope = 0/" /etc/sysctl.d/10-ptrace.conf',
         # 'sudo sysctl -w kernel.yama.ptrace_scope=0',
-        'bash -c "sudo echo \"*           hard    memlock         unlimited\" >> /etc/security/limits.conf"',
-        'bash -c "sudo echo \"*           soft    memlock         unlimited\" >> /etc/security/limits.conf"'
-    ]
+        # 'bash -c sudo bash -c echo \"*           hard    memlock         unlimited\" >> /etc/security/limits.conf', 
+        # 'bash -c sudo bash -c echo \"*           soft    memlock         unlimited\" >> /etc/security/limits.conf',
+        'echo \"*           hard    memlock         unlimited\" | sudo tee --append /etc/security/limits.conf',
+        'echo \"*           soft    memlock         unlimited\" | sudo tee --append /etc/security/limits.conf'
+        # 'bash -c ulimit -a',
+        # 'bash -c ulimit -Ha',
+        #'sudo tail -4 /etc/security/limits.conf' 
+	]
 
     # Get the node agent SKU and image reference for the virtual machine
     # configuration.
@@ -276,7 +281,8 @@ def create_pool(batch_service_client, pool_id,
             image_reference=image_ref_to_use,
             node_agent_sku_id=sku_to_use),
         vm_size=_POOL_VM_SIZE,
-        target_dedicated_nodes=_POOL_NODE_COUNT,
+        target_low_priority_nodes=_POOL_NODE_COUNT,
+#        target_dedicated_nodes=_POOL_NODE_COUNT,
         enable_inter_node_communication=1,
         start_task=batch.models.StartTask(
             command_line=common.helpers.wrap_commands_in_shell('linux',
