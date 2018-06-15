@@ -228,8 +228,6 @@ def create_pool(batch_service_client, pool_id,
         # otherwise since this start task is run as an admin, it would not
         # be accessible by tasks run as a non-admin user.
         'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_TASK_FILE),
-        #'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_EXECUTABLE),
-        #'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_MPI),
         'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_SCRIPT),
         'cp -p {} $AZ_BATCH_NODE_SHARED_DIR'.format(_PREPSCRIPT),
         #'sudo yum -y update',
@@ -256,14 +254,14 @@ def create_pool(batch_service_client, pool_id,
         # make sure MPI is allowed to run in Ubuntu, without this, this is seen as a security attack....
         # 'sudo sed -i -e "s/kernel.yama.ptrace_scope = 1/kernel.yama.ptrace_scope = 0/" /etc/sysctl.d/10-ptrace.conf',
         # 'sudo sysctl -w kernel.yama.ptrace_scope=0',
-        # 'bash -c sudo bash -c echo \"*           hard    memlock         unlimited\" >> /etc/security/limits.conf', 
+        # 'bash -c sudo bash -c echo \"*           hard    memlock         unlimited\" >> /etc/security/limits.conf',
         # 'bash -c sudo bash -c echo \"*           soft    memlock         unlimited\" >> /etc/security/limits.conf',
         'echo \"*           hard    memlock         unlimited\" | sudo tee --append /etc/security/limits.conf',
         'echo \"*           soft    memlock         unlimited\" | sudo tee --append /etc/security/limits.conf'
         # 'bash -c ulimit -a',
         # 'bash -c ulimit -Ha',
-        #'sudo tail -4 /etc/security/limits.conf' 
-	]
+        #'sudo tail -4 /etc/security/limits.conf'
+    ]
 
     # Get the node agent SKU and image reference for the virtual machine
     # configuration.
@@ -275,6 +273,10 @@ def create_pool(batch_service_client, pool_id,
     # user = batchmodels.AutoUserSpecification(
     #    scope=batchmodels.AutoUserScope.pool,
     #    elevation_level=batchmodels.ElevationLevel.admin)
+    # print(_POOL_NODE_COUNT)
+    # print(type(_POOL_NODE_COUNT))
+    # target_low_priority_nodes_count=int(_POOL_NODE_COUNT)-1
+
     new_pool = batch.models.PoolAddParameter(
         id=pool_id,
         virtual_machine_configuration=batchmodels.VirtualMachineConfiguration(
@@ -282,7 +284,7 @@ def create_pool(batch_service_client, pool_id,
             node_agent_sku_id=sku_to_use),
         vm_size=_POOL_VM_SIZE,
         target_low_priority_nodes=_POOL_NODE_COUNT,
-#        target_dedicated_nodes=_POOL_NODE_COUNT,
+        # target_dedicated_nodes=1,
         enable_inter_node_communication=1,
         start_task=batch.models.StartTask(
             command_line=common.helpers.wrap_commands_in_shell('linux',
@@ -427,8 +429,8 @@ def download_blobs_from_container(block_blob_client,
      download files.
     :param directory_path: The local directory to which to download the files.
     """
-    if not os.path.exists(directory_path) :
-            os.makedirs(directory_path)
+    if not os.path.exists(directory_path):
+        os.makedirs(directory_path)
 
     print('Downloading all files from container [{}]...'.format(
         container_name))
@@ -450,8 +452,24 @@ def download_blobs_from_container(block_blob_client,
     print('  Download complete!')
 
 
+def get_pool_information(batch_service_client, pool_id, job_id):
+    """
+    Gets all available pool information be captured
+
+    :param batch_service_client: A Batch service client.
+    :type batch_service_client: `azure.batch.BatchServiceClient`
+    :param str pool_id: The id of the pool used.
+    :param str job_id: The id of the job trigerred. 
+
+    """
+    details_gathered = ''
+
+    return details_gathered
+
+
 def main(argv):
     inputfile = ''
+    conffile = ''
     mpicount = 1
     openMPcount = 1
     nodes = 2
@@ -463,7 +481,7 @@ def main(argv):
 
     try:
         opts, args = getopt.getopt(
-            argv, "hi:n:m:p:r:v:", ["inputfile=", "nodes=", "mpicount=", "openmp=", "rdma=", "vmsku="])
+            argv, "hi:c:n:m:p:r:v:", ["inputfile=", "conf=", "nodes=", "mpicount=", "openmp=", "rdma=", "vmsku="])
     except getopt.GetoptError:
         print(helpline)
         sys.exit(2)
@@ -476,6 +494,8 @@ def main(argv):
             sys.exit()
         elif opt in ("-i", "--inputfile"):
             inputfile = arg
+        elif opt in ("-c", "--conf"):
+            conffile = arg
         elif opt in ("-n", "--nodes"):
             nodes = arg
         elif opt in ("-m", "--mpicount"):
@@ -493,18 +513,24 @@ def main(argv):
         print(helpline)
         sys.exit()
 
-    return inputfile, nodes, mpicount, openMPcount, rdma, os_offer, vmsku
+    return inputfile, conffile, nodes, mpicount, openMPcount, rdma, os_offer, vmsku
+
 
 if __name__ == '__main__':
 
-    inputfile, _POOL_NODE_COUNT, _MPI_PROCESSORS, _OPENMP_COUNT, _USE_RDMA, _NODE_OS_OFFER, _POOL_VM_SIZE = main(
+    inputfile, conffile, _POOL_NODE_COUNT, _MPI_PROCESSORS, _OPENMP_COUNT, _USE_RDMA, _NODE_OS_OFFER, _POOL_VM_SIZE = main(
         sys.argv[1:])
     start_time = datetime.datetime.now().replace(microsecond=0)
     print('Sample start: {}'.format(start_time))
     print()
 
+    # Read conf file
     global_config = configparser.ConfigParser()
-    global_config.read(common.helpers._SAMPLES_CONFIG_FILE_NAME)
+    if conffile == '':
+        global_config.read(common.helpers._SAMPLES_CONFIG_FILE_NAME)
+    else:
+        global_config.read(conffile)
+
     # Set up the configuration
     _BATCH_ACCOUNT_KEY = global_config.get('Batch', 'batchaccountkey')
     _BATCH_ACCOUNT_NAME = global_config.get('Batch', 'batchaccountname')
@@ -523,6 +549,25 @@ if __name__ == '__main__':
     blob_client = azureblob.BlockBlobService(
         account_name=_STORAGE_ACCOUNT_NAME,
         account_key=_STORAGE_ACCOUNT_KEY)
+
+    directory = os.path.expanduser('./result/' + _JOB_ID)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    with open(directory + "_pool_description.txt", "w") as text_file:
+        print('###################################################################################', file=text_file)
+        print(
+            f"OS and version used: {_NODE_OS_OFFER} {_NODE_OS_SKU}", file=text_file)
+        print(f"Number of nodes: {_POOL_NODE_COUNT}", file=text_file)
+        print(f"VM used: {_POOL_VM_SIZE}", file=text_file)
+        print(f"File submitted: {inputfile}", file=text_file)
+        if _USE_RDMA == 1:
+            print('Using RDMA networking', file=text_file)
+        else:
+            print('Without using RDMA networking', file=text_file)
+        print(f"OpenMP threads: {_OPENMP_COUNT}", file=text_file)
+        print('###################################################################################', file=text_file)
+        text_file.close()
 
     print('Created blob client')
     # Use the blob client to create the containers in Azure Storage if they
@@ -575,6 +620,12 @@ if __name__ == '__main__':
     print('Uploading data files end: {}'.format(finishtask_time))
     print('Elapsed time: {}'.format(finishtask_time - starttask_time))
     print()
+
+    # Upload the pool description txt to output
+    upload_file_to_container(blob_client,
+                             output_container_name,
+                             os.path.realpath(directory + "pool_description.txt"))
+
     # Obtain a shared access signature that provides write access to the output
     # container to which the tasks will upload their output.
     output_container_sas_token = get_container_sas_token(
@@ -654,11 +705,15 @@ if __name__ == '__main__':
     # Download the task output files from the output Storage container to a
     # local directory. Note that we could have also downloaded the output
     # files directly from the compute nodes themselves.
-    if query_yes_no('Dowload all results?', default="no") == 'yes':
-        directory = os.path.expanduser('./result/' + _JOB_ID)
+
+    if query_yes_no('Download all results?', default="no") == 'yes':
         download_blobs_from_container(blob_client,
                                       output_container_name,
                                       directory)
+
+        #details = get_pool_information(batch_client, _POOL_ID,_JOB_ID)
+        #print(details, file=text_file)
+        #print(f"Purchase Amount: {TotalAmount}", file=text_file)
 
     # Clean up storage resources
     print('Deleting containers...')

@@ -37,7 +37,7 @@ echo "fdsvars $fdsvars"
 ulimit -s unlimited
 cd $AZ_BATCH_TASK_SHARED_DIR
 cd share
-cp -rp $AZ_BATCH_NODE_SHARED_DIR/* .
+cp -p $AZ_BATCH_NODE_SHARED_DIR/* .
 ls -lh
 if [ $USE_RDMA -eq 1 ]
 then
@@ -72,7 +72,8 @@ else
 fi
 
 zip fds_results.zip * ../stderr.txt ../stdout.txt
-cp fds_results.zip ../wd/
+zip $SHORT_NAME\.out.zip *.out
+cp *.zip ../wd/
 cp *.out ../wd/$SHORT_NAME\.out
 cp ../stderr.txt ../wd/
 cp ../stdout.txt ../wd/
