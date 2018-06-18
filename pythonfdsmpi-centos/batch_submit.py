@@ -518,7 +518,7 @@ def main(argv):
             vmsku = arg
 
     if inputfile == '':
-        print(helpline)
+        print(helpline) 
         sys.exit()
 
     totalnodes = int(nodes) + int(lowprio)
