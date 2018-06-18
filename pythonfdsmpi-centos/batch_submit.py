@@ -288,6 +288,7 @@ def create_pool(batch_service_client, pool_id,
         target_low_priority_nodes=_POOL_NODE_COUNT_LOW,
         target_dedicated_nodes=_POOL_NODE_COUNT,
         enable_inter_node_communication=1,
+        max_tasks_per_node=1, # as per mpi article
         start_task=batch.models.StartTask(
             command_line=common.helpers.wrap_commands_in_shell('linux',
                                                                task_commands),
