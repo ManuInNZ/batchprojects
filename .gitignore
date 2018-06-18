@@ -4,3 +4,4 @@ benchmark/
 pythonfdsmpi-centos/configuration.cfg
 **.pyc
 pythonfdsmpi-centos/batch_metrics.py
+pythonfdsmpi-centos/check_progress.py

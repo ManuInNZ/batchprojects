@@ -28,7 +28,7 @@ echo "nodes list(AZ_BATCH_HOST_LIST): $AZ_BATCH_HOST_LIST"
 echo "#### cpuinfo ##################################################################################################################################"
 cat /proc/cpuinfo 
 echo "#### inxi ##################################################################################################################################"
-inxi -F
+inxi -F -c 1
 echo "###############################################################################################################################################"
 
 #export LD_LIBRARY_PATH=$AZ_BATCH_NODE_SHARED_DIR:$LD_LIBRARY_PATH
@@ -61,7 +61,10 @@ then
     echo "###########################################################################################################################################"
     echo "Executing mpirun"
     echo "mpirun -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS fds $PROJECT_NAME"
+    date
     mpirun -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS fds $PROJECT_NAME
+    echo "done"
+    date
 else
     export OMP_NUM_THREADS=$INPUTOPENMP
     # HOSTS_LIST=$(echo $AZ_BATCH_HOST_LIST|sed 's/,/ /g')
@@ -72,7 +75,10 @@ else
     echo "###########################################################################################################################################"
     echo "Executing mpiexec"
     echo "mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS fds $PROJECT_NAME"
+    date
     mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS fds $PROJECT_NAME 
+    echo "done"
+    date
 fi
 
 zip fds_results.zip * ../stderr.txt ../stdout.txt

@@ -69,7 +69,8 @@ _APP_INSIGHTS_INSTRUMENTATION_KEY = ''
 # to be overloaded with config file
 
 _POOL_ID = 'Pool{}'.format(datetime.datetime.now().strftime("-%y%m%d-%H%M%S"))
-_POOL_NODE_COUNT = 2
+_POOL_NODE_COUNT = 1
+_POOL_NODE_COUNT_LOW = 0
 # _POOL_VM_SIZE = 'BASIC_A2'
 #_POOL_VM_SIZE = 'Standard_H16r'
 _POOL_VM_SIZE = 'STANDARD_A8'
@@ -192,7 +193,7 @@ def get_container_sas_token(block_blob_client,
         block_blob_client.generate_container_shared_access_signature(
             container_name,
             permission=blob_permissions,
-            expiry=datetime.datetime.utcnow() + datetime.timedelta(days=8))
+            expiry=datetime.datetime.utcnow() + datetime.timedelta(days=30))
 
     return container_sas_token
 
@@ -284,8 +285,8 @@ def create_pool(batch_service_client, pool_id,
             image_reference=image_ref_to_use,
             node_agent_sku_id=sku_to_use),
         vm_size=_POOL_VM_SIZE,
-        target_low_priority_nodes=_POOL_NODE_COUNT,
-        # target_dedicated_nodes=1,
+        target_low_priority_nodes=_POOL_NODE_COUNT_LOW,
+        target_dedicated_nodes=_POOL_NODE_COUNT,
         enable_inter_node_communication=1,
         start_task=batch.models.StartTask(
             command_line=common.helpers.wrap_commands_in_shell('linux',
@@ -376,7 +377,7 @@ def add_tasks(batch_service_client, job_id, input_files,
             multi_instance_settings=(batch.models.MultiInstanceSettings(
                 coordination_command_line=common.helpers.wrap_commands_in_shell(
                     'linux', task_commands),
-                number_of_instances=_POOL_NODE_COUNT)
+                number_of_instances=_POOL_NODE_COUNT+_POOL_NODE_COUNT_LOW)
             ),
             user_identity=batch.models.UserIdentity(user_name='fdsuser'),
         )
@@ -473,7 +474,8 @@ def main(argv):
     conffile = ''
     mpicount = 1
     openMPcount = 1
-    nodes = 2
+    nodes = 1
+    lowprio = 0
     rdma = 0
     vmsku = 'STANDARD_A8'
     os_offer = 'CentOS'
@@ -482,7 +484,7 @@ def main(argv):
 
     try:
         opts, args = getopt.getopt(
-            argv, "hi:c:n:m:p:r:v:", ["inputfile=", "conf=", "nodes=", "mpicount=", "openmp=", "rdma=", "vmsku="])
+            argv, "hi:c:n:l:m:p:r:v:", ["inputfile=", "conf=", "nodes=", "lowprio=", "mpicount=", "openmp=", "rdma=", "vmsku="])
     except getopt.GetoptError:
         print(helpline)
         sys.exit(2)
@@ -499,6 +501,8 @@ def main(argv):
             conffile = arg
         elif opt in ("-n", "--nodes"):
             nodes = arg
+        elif opt in ("-l", "--lowprio"):
+            lowprio = arg
         elif opt in ("-m", "--mpicount"):
             mpicount = arg
         elif opt in ("-p", "--openmp"):
@@ -514,12 +518,12 @@ def main(argv):
         print(helpline)
         sys.exit()
 
-    return inputfile, conffile, nodes, mpicount, openMPcount, rdma, os_offer, vmsku
+    return inputfile, conffile, nodes, lowprio, mpicount, openMPcount, rdma, os_offer, vmsku
 
 
 if __name__ == '__main__':
 
-    inputfile, conffile, _POOL_NODE_COUNT, _MPI_PROCESSORS, _OPENMP_COUNT, _USE_RDMA, _NODE_OS_OFFER, _POOL_VM_SIZE = main(
+    inputfile, conffile, _POOL_NODE_COUNT, _POOL_NODE_COUNT_LOW, _MPI_PROCESSORS, _OPENMP_COUNT, _USE_RDMA, _NODE_OS_OFFER, _POOL_VM_SIZE = main(
         sys.argv[1:])
     start_time = datetime.datetime.now().replace(microsecond=0)
     print('Sample start: {}'.format(start_time))
@@ -559,7 +563,9 @@ if __name__ == '__main__':
         print('###################################################################################', file=text_file)
         print(
             f"OS and version used: {_NODE_OS_OFFER} {_NODE_OS_SKU}", file=text_file)
-        print(f"Number of nodes: {_POOL_NODE_COUNT}", file=text_file)
+        print(f"Number of dedicated nodes: {_POOL_NODE_COUNT}", file=text_file)
+        print(
+            f"Number of low priority nodes: {_POOL_NODE_COUNT_LOW}", file=text_file)
         print(f"VM used: {_POOL_VM_SIZE}", file=text_file)
         print(f"File submitted: {inputfile}", file=text_file)
         if _USE_RDMA == 1:
@@ -625,7 +631,7 @@ if __name__ == '__main__':
     # Upload the pool description txt to output
     upload_file_to_container(blob_client,
                              output_container_name,
-                             os.path.realpath(directory + "pool_description.txt"))
+                             os.path.realpath(directory + "_pool_description.txt"))
 
     # Obtain a shared access signature that provides write access to the output
     # container to which the tasks will upload their output.
@@ -697,32 +703,32 @@ if __name__ == '__main__':
           "specified timeout period.")
 
     # Clean up Batch resources (if the user so chooses).
-    if query_yes_no('Delete pool?') == 'yes':
-        batch_client.pool.delete(_POOL_ID)
+    # if query_yes_no('Delete pool?') == 'yes':
+    batch_client.pool.delete(_POOL_ID)
 
-    if query_yes_no('Delete job?') == 'yes':
-        batch_client.job.delete(_JOB_ID)
+    # if query_yes_no('Delete job?') == 'yes':
+    #    batch_client.job.delete(_JOB_ID)
 
     # Download the task output files from the output Storage container to a
     # local directory. Note that we could have also downloaded the output
     # files directly from the compute nodes themselves.
 
-    if query_yes_no('Download all results?', default="no") == 'yes':
-        download_blobs_from_container(blob_client,
-                                      output_container_name,
-                                      directory)
+    # if query_yes_no('Download all results?', default="no") == 'yes':
+    #     download_blobs_from_container(blob_client,
+    #                                   output_container_name,
+    #                                   directory)
 
-        #details = get_pool_information(batch_client, _POOL_ID,_JOB_ID)
-        #print(details, file=text_file)
-        #print(f"Purchase Amount: {TotalAmount}", file=text_file)
+    #details = get_pool_information(batch_client, _POOL_ID,_JOB_ID)
+    #print(details, file=text_file)
+    #print(f"Purchase Amount: {TotalAmount}", file=text_file)
 
     # Clean up storage resources
     print('Deleting containers...')
-    if query_yes_no('Delete appl and input storage containers?') == 'yes':
-        blob_client.delete_container(input_container_name)
-        blob_client.delete_container(app_container_name)
-    if query_yes_no('Delete output storage containers?', default="no") == 'yes':
-        blob_client.delete_container(output_container_name)
+    # if query_yes_no('Delete appl and input storage containers?') == 'yes':
+    blob_client.delete_container(input_container_name)
+    blob_client.delete_container(app_container_name)
+    # if query_yes_no('Delete output storage containers?', default="no") == 'yes':
+    #    blob_client.delete_container(output_container_name)
 
     # Print out some timing info
     end_time = datetime.datetime.now().replace(microsecond=0)
