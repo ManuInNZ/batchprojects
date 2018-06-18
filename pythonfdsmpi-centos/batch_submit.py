@@ -288,7 +288,7 @@ def create_pool(batch_service_client, pool_id,
         target_low_priority_nodes=_POOL_NODE_COUNT_LOW,
         target_dedicated_nodes=_POOL_NODE_COUNT,
         enable_inter_node_communication=1,
-        max_tasks_per_node=1, # as per mpi article
+        max_tasks_per_node=1,  # as per mpi article
         start_task=batch.models.StartTask(
             command_line=common.helpers.wrap_commands_in_shell('linux',
                                                                task_commands),
@@ -371,6 +371,8 @@ def add_tasks(batch_service_client, job_id, input_files,
                        output_container_name,
                        output_container_sas_token)]
 
+        total_instances = int(_POOL_NODE_COUNT) + int(_POOL_NODE_COUNT_LOW)
+        print(f"{total_instances} and type {type(total_instances)} ")
         tasks.append(batch.models.TaskAddParameter(
             'FDS',
             common.helpers.wrap_commands_in_shell('linux', command),
@@ -378,7 +380,7 @@ def add_tasks(batch_service_client, job_id, input_files,
             multi_instance_settings=(batch.models.MultiInstanceSettings(
                 coordination_command_line=common.helpers.wrap_commands_in_shell(
                     'linux', task_commands),
-                number_of_instances=_POOL_NODE_COUNT+_POOL_NODE_COUNT_LOW)
+                number_of_instances=total_instances)
             ),
             user_identity=batch.models.UserIdentity(user_name='fdsuser'),
         )
