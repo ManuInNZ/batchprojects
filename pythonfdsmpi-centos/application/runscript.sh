@@ -17,6 +17,7 @@ export MPI_PROCESSORS=$3
 export INPUTOPENMP=$4
 export SHORT_NAME=${PROJECT_NAME::-4}
 export USE_RDMA=$5
+export TOTAL_MP=$(($3 * $4))
 echo "# full line"
 echo $0 $1 $2 $3 $4 $5
 echo "# input file: $INPUT_FILE"
@@ -60,9 +61,9 @@ then
     set
     echo "###########################################################################################################################################"
     echo "Executing mpirun"
-    echo "mpirun -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS fds $PROJECT_NAME"
+    echo "mpirun -hosts $AZ_BATCH_HOST_LIST -np $TOTAL_MP fds $PROJECT_NAME"
     date
-    mpirun -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS fds $PROJECT_NAME
+    mpirun -hosts $AZ_BATCH_HOST_LIST -np $TOTAL_MP fds $PROJECT_NAME
     echo "done"
     date
 else
@@ -74,9 +75,9 @@ else
     set
     echo "###########################################################################################################################################"
     echo "Executing mpiexec"
-    echo "mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS fds $PROJECT_NAME"
+    echo "mpiexec -hosts $AZ_BATCH_HOST_LIST -np $TOTAL_MP fds $PROJECT_NAME"
     date
-    mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS fds $PROJECT_NAME 
+    mpiexec -hosts $AZ_BATCH_HOST_LIST -np $TOTAL_MP fds $PROJECT_NAME 
     echo "done"
     date
 fi
