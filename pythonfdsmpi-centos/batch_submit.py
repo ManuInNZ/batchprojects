@@ -712,20 +712,20 @@ if __name__ == '__main__':
           "specified timeout period.")
 
     # Clean up Batch resources (if the user so chooses).
-    # if query_yes_no('Delete pool?') == 'yes':
-    batch_client.pool.delete(_POOL_ID)
+    if query_yes_no('Delete pool?') == 'yes':
+        batch_client.pool.delete(_POOL_ID)
 
-    # if query_yes_no('Delete job?') == 'yes':
-    #    batch_client.job.delete(_JOB_ID)
+    if query_yes_no('Delete job?') == 'yes':
+       batch_client.job.delete(_JOB_ID)
 
     # Download the task output files from the output Storage container to a
     # local directory. Note that we could have also downloaded the output
     # files directly from the compute nodes themselves.
 
-    # if query_yes_no('Download all results?', default="no") == 'yes':
-    #     download_blobs_from_container(blob_client,
-    #                                   output_container_name,
-    #                                   directory)
+    if query_yes_no('Download all results?', default="no") == 'yes':
+        download_blobs_from_container(blob_client,
+                                      output_container_name,
+                                      directory)
 
     #details = get_pool_information(batch_client, _POOL_ID,_JOB_ID)
     #print(details, file=text_file)
