@@ -518,7 +518,7 @@ def main(argv):
             vmsku = arg
 
     if inputfile == '':
-        print(helpline) 
+        print(helpline)
         sys.exit()
 
     totalnodes = int(nodes) + int(lowprio)
@@ -568,8 +568,9 @@ if __name__ == '__main__':
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    with open(directory + "_pool_description.txt", "w") as text_file:
+    with open(directory + "/pool_description.txt", "w") as text_file:
         print('###################################################################################', file=text_file)
+        print(f"POOL_ID {_POOL_ID} / JOB_ID {_JOB_ID}", file=text_file)
         print(
             f"OS and version used: {_NODE_OS_OFFER} {_NODE_OS_SKU}", file=text_file)
         print(f"Number of dedicated nodes: {_POOL_NODE_COUNT}", file=text_file)
@@ -640,7 +641,7 @@ if __name__ == '__main__':
     # Upload the pool description txt to output
     upload_file_to_container(blob_client,
                              output_container_name,
-                             os.path.realpath(directory + "_pool_description.txt"))
+                             os.path.realpath(directory + "/pool_description.txt"))
 
     # Obtain a shared access signature that provides write access to the output
     # container to which the tasks will upload their output.
@@ -715,17 +716,17 @@ if __name__ == '__main__':
     if query_yes_no('Delete pool?') == 'yes':
         batch_client.pool.delete(_POOL_ID)
 
-    if query_yes_no('Delete job?') == 'yes':
-       batch_client.job.delete(_JOB_ID)
+    # if query_yes_no('Delete job?') == 'yes':
+    #    batch_client.job.delete(_JOB_ID)
 
     # Download the task output files from the output Storage container to a
     # local directory. Note that we could have also downloaded the output
     # files directly from the compute nodes themselves.
 
-    if query_yes_no('Download all results?', default="no") == 'yes':
-        download_blobs_from_container(blob_client,
-                                      output_container_name,
-                                      directory)
+    # if query_yes_no('Download all results?', default="no") == 'yes':
+    #     download_blobs_from_container(blob_client,
+    #                                   output_container_name,
+    #                                   directory)
 
     #details = get_pool_information(batch_client, _POOL_ID,_JOB_ID)
     #print(details, file=text_file)
