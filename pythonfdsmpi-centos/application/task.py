@@ -58,6 +58,8 @@ if __name__ == '__main__':
     parser.add_argument('--sastoken', required=True,
                         help='The SAS token providing write access to the'
                              'Storage container.')
+    parser.add_argument('--numnodes', type=int, required=True,
+                        help='actual number of nodes.')
     args = parser.parse_args()
 
     input_file = os.path.realpath(args.filepath)
@@ -65,14 +67,16 @@ if __name__ == '__main__':
     input_mpiprocs = args.mpiprocs
     input_openmp = args.openmp
     input_rdma = args.rdma
+    input_numnodes = args.numnodes
     #output_file = os.path.realpath('fds_results.zip')
     output_file = 'fds_results.zip'
-    run_command = "runscript.sh {} {} {} {} {}".format(
+    run_command = "runscript.sh {} {} {} {} {} {}".format(
         input_file,
         input_project,
         input_mpiprocs,
         input_openmp,
-        input_rdma)
+        input_rdma,
+        input_numnodes)
     #call("runscript.sh", shell=True)
     call(run_command, shell=True)
 

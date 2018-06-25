@@ -359,9 +359,10 @@ def add_tasks(batch_service_client, job_id, input_files,
 
     for idx, input_file in enumerate(input_files):
 
+        total_instances = int(_POOL_NODE_COUNT) + int(_POOL_NODE_COUNT_LOW)
         command = ['python $AZ_BATCH_NODE_SHARED_DIR/{} '
                    '--filepath {} --mpiprocs {} --openmp {} --rdma {} --storageaccount {} '
-                   '--storagecontainer {} --sastoken "{}"'.format(
+                   '--storagecontainer {} --sastoken "{}" --numnodes {}'.format(
                        _TASK_FILE,
                        input_file.file_path,
                        _MPI_PROCESSORS,
@@ -369,9 +370,9 @@ def add_tasks(batch_service_client, job_id, input_files,
                        _USE_RDMA,
                        _STORAGE_ACCOUNT_NAME,
                        output_container_name,
-                       output_container_sas_token)]
+                       output_container_sas_token,
+                       total_instances)]
 
-        total_instances = int(_POOL_NODE_COUNT) + int(_POOL_NODE_COUNT_LOW)
         print(f"{total_instances} and type {type(total_instances)} ")
         tasks.append(batch.models.TaskAddParameter(
             'FDS',

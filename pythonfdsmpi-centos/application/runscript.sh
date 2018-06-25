@@ -17,14 +17,17 @@ export MPI_PROCESSORS=$3
 export INPUTOPENMP=$4
 export SHORT_NAME=${PROJECT_NAME::-4}
 export USE_RDMA=$5
+export NUM_NODES=$6
+export PROCS_PER_NODE=$(($3 / $6))
 echo "# full line"
-echo $0 $1 $2 $3 $4 $5
+echo $0 $1 $2 $3 $4 $5 $6
 echo "# input file: $INPUT_FILE"
 echo "# project: $PROJECT_NAME $SHORT_NAME"
 echo "# number of MPI_PROCESSORSes:" $MPI_PROCESSORS
 echo "# number of openMP:" $INPUTOPENMP
 echo "use RDMA (1=True / 0=False):" $USE_RDMA
 echo "nodes list(AZ_BATCH_HOST_LIST): $AZ_BATCH_HOST_LIST"
+echo "number of nodes: $NUM_NODES and process per nodes: $PROCS_PER_NODE"
 echo "#### cpuinfo ##################################################################################################################################"
 cat /proc/cpuinfo | grep 'model name' && cat /proc/cpuinfo | grep processor && cat /proc/cpuinfo | grep 'core id'   
 echo "#### inxi ##################################################################################################################################"
@@ -60,9 +63,9 @@ then
     set
     echo "###########################################################################################################################################"
     echo "Executing mpirun"
-    echo "mpirun -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS -ppn $MPI_PROCESSORS fds $PROJECT_NAME"
+    echo "mpirun -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS -ppn $PROCS_PER_NODE fds $PROJECT_NAME"
     date
-    mpirun -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS -ppn $MPI_PROCESSORS fds $PROJECT_NAME
+    mpirun -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS -ppn $PROCS_PER_NODE fds $PROJECT_NAME
     echo "done"
     date
 else
@@ -75,9 +78,9 @@ else
     set
     echo "###########################################################################################################################################"
     echo "Executing mpiexec"
-    echo "mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS -ppn $MPI_PROCESSORS fds $PROJECT_NAME"
+    echo "mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS -ppn $PROCS_PER_NODE fds $PROJECT_NAME"
     date
-    mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS -ppn $MPI_PROCESSORS fds $PROJECT_NAME 
+    mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS -ppn $PROCS_PER_NODE fds $PROJECT_NAME 
     echo "done"
     date
 fi
