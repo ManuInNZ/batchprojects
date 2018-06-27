@@ -5,3 +5,5 @@ pythonfdsmpi-centos/configuration.cfg
 **.pyc
 pythonfdsmpi-centos/batch_metrics.py
 pythonfdsmpi-centos/check_progress.py
+pythonfdsmpi-centos/batch_metrics_export.py
+pythonfdsmpi-centos/check_progressManu.py

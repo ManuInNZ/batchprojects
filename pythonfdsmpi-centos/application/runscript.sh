@@ -18,9 +18,9 @@ export INPUTOPENMP=$4
 export SHORT_NAME=${PROJECT_NAME::-4}
 export USE_RDMA=$5
 export NUM_NODES=$6
-export PROCS_PER_NODE=$(($3 / $6))
+export PROCS_PER_NODE=$7
 echo "# full line"
-echo $0 $1 $2 $3 $4 $5 $6
+echo $0 $1 $2 $3 $4 $5 $6 $7
 echo "# input file: $INPUT_FILE"
 echo "# project: $PROJECT_NAME $SHORT_NAME"
 echo "# number of MPI_PROCESSORSes:" $MPI_PROCESSORS
@@ -46,6 +46,8 @@ cd $AZ_BATCH_TASK_SHARED_DIR
 cd share
 cp -p $AZ_BATCH_NODE_SHARED_DIR/* .
 ls -lh
+
+
 if [ $USE_RDMA -eq 1 ]
 then
     mpivars=$(find /opt/intel -name mpivars.sh)
@@ -63,9 +65,19 @@ then
     set
     echo "###########################################################################################################################################"
     echo "Executing mpirun"
-    echo "mpirun -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS -ppn $PROCS_PER_NODE fds $PROJECT_NAME"
+    if [ $PROCS_PER_NODE -eq 0 ]
+    then
+        echo "mpirun -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS fds $PROJECT_NAME"
+    else
+        echo "mpirun -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS -ppn $PROCS_PER_NODE fds $PROJECT_NAME"
+    fi
     date
-    mpirun -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS -ppn $PROCS_PER_NODE fds $PROJECT_NAME
+    if [ $PROCS_PER_NODE -eq 0 ]
+    then
+        mpirun -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS fds $PROJECT_NAME
+    else
+        mpirun -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS -ppn $PROCS_PER_NODE fds $PROJECT_NAME
+    fi
     echo "done"
     date
 else
@@ -78,9 +90,19 @@ else
     set
     echo "###########################################################################################################################################"
     echo "Executing mpiexec"
-    echo "mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS -ppn $PROCS_PER_NODE fds $PROJECT_NAME"
+    if [ $PROCS_PER_NODE -eq 0 ]
+    then
+        echo "mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS fds $PROJECT_NAME "
+    else 
+        echo "mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS -ppn $PROCS_PER_NODE fds $PROJECT_NAME "
+    fi
     date
-    mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS -ppn $PROCS_PER_NODE fds $PROJECT_NAME 
+    if [ $PROCS_PER_NODE -eq 0 ]
+    then
+        mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS fds $PROJECT_NAME 
+    else 
+        mpiexec -hosts $AZ_BATCH_HOST_LIST -np $MPI_PROCESSORS -ppn $PROCS_PER_NODE fds $PROJECT_NAME 
+    fi
     echo "done"
     date
 fi

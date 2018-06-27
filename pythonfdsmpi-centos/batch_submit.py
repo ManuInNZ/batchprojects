@@ -79,6 +79,7 @@ _NODE_OS_PUBLISHER = 'Openlogic'
 _NODE_OS_OFFER = 'CentOS'
 _NODE_OS_SKU = '7.4'
 _USE_RDMA = 0
+_PROC_PER_NODE = 0
 
 _JOB_ID = 'Job{}'.format(datetime.datetime.now().strftime("-%y%m%d-%H%M%S"))
 
@@ -361,12 +362,13 @@ def add_tasks(batch_service_client, job_id, input_files,
 
         total_instances = int(_POOL_NODE_COUNT) + int(_POOL_NODE_COUNT_LOW)
         command = ['python $AZ_BATCH_NODE_SHARED_DIR/{} '
-                   '--filepath {} --mpiprocs {} --openmp {} --rdma {} --storageaccount {} '
+                   '--filepath {} --mpiprocs {} --openmp {} --ppn {} --rdma {} --storageaccount {} '
                    '--storagecontainer {} --sastoken "{}" --numnodes {}'.format(
                        _TASK_FILE,
                        input_file.file_path,
                        _MPI_PROCESSORS,
                        _OPENMP_COUNT,
+                       _PROC_PER_NODE,
                        _USE_RDMA,
                        _STORAGE_ACCOUNT_NAME,
                        output_container_name,
@@ -478,6 +480,7 @@ def main(argv):
     conffile = ''
     mpicount = 1
     openMPcount = 1
+    procPerNode = 0
     nodes = 0
     lowprio = 0
     rdma = 0
@@ -488,7 +491,7 @@ def main(argv):
 
     try:
         opts, args = getopt.getopt(
-            argv, "hi:c:n:l:m:p:r:v:", ["inputfile=", "conf=", "nodes=", "lowprio=", "mpicount=", "openmp=", "rdma=", "vmsku="])
+            argv, "hi:c:n:l:m:o:p:r:v:", ["inputfile=", "conf=", "nodes=", "lowprio=", "mpicount=", "openmp=", "ppn=", "rdma=", "vmsku="])
     except getopt.GetoptError:
         print(helpline)
         sys.exit(2)
@@ -509,8 +512,10 @@ def main(argv):
             lowprio = arg
         elif opt in ("-m", "--mpicount"):
             mpicount = arg
-        elif opt in ("-p", "--openmp"):
+        elif opt in ("-o", "--openmp"):
             openMPcount = arg
+        elif opt in ("-p", "--ppn"):
+            procPerNode = arg
         elif opt in ("-r", "--rdma"):
             rdma = int(arg)
             if rdma == 1:
@@ -528,12 +533,12 @@ def main(argv):
         print(helpline)
         sys.exit()
 
-    return inputfile, conffile, nodes, lowprio, mpicount, openMPcount, rdma, os_offer, vmsku
+    return inputfile, conffile, nodes, lowprio, mpicount, openMPcount, procPerNode, rdma, os_offer, vmsku
 
 
 if __name__ == '__main__':
 
-    inputfile, conffile, _POOL_NODE_COUNT, _POOL_NODE_COUNT_LOW, _MPI_PROCESSORS, _OPENMP_COUNT, _USE_RDMA, _NODE_OS_OFFER, _POOL_VM_SIZE = main(
+    inputfile, conffile, _POOL_NODE_COUNT, _POOL_NODE_COUNT_LOW, _MPI_PROCESSORS, _OPENMP_COUNT, _PROC_PER_NODE, _USE_RDMA, _NODE_OS_OFFER, _POOL_VM_SIZE = main(
         sys.argv[1:])
     start_time = datetime.datetime.now().replace(microsecond=0)
     print('Sample start: {}'.format(start_time))
@@ -584,6 +589,7 @@ if __name__ == '__main__':
         else:
             print('Without using RDMA networking', file=text_file)
         print(f"OpenMP threads: {_OPENMP_COUNT}", file=text_file)
+        print(f"Processes per node: {_PROC_PER_NODE}", file=text_file)
         print('###################################################################################', file=text_file)
         text_file.close()
 
@@ -714,8 +720,8 @@ if __name__ == '__main__':
           "specified timeout period.")
 
     # Clean up Batch resources (if the user so chooses).
-    if query_yes_no('Delete pool?') == 'yes':
-        batch_client.pool.delete(_POOL_ID)
+    #if query_yes_no('Delete pool?') == 'yes':
+    batch_client.pool.delete(_POOL_ID)
 
     # if query_yes_no('Delete job?') == 'yes':
     #    batch_client.job.delete(_JOB_ID)

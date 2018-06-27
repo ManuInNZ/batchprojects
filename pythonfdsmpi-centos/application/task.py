@@ -46,6 +46,8 @@ if __name__ == '__main__':
                         help='The number of mpi procs for the FDS model.')
     parser.add_argument('--openmp', type=int, required=True,
                         help='The number of OpenMP processors count.')
+    parser.add_argument('--ppn', type=int, required=True,
+                        help='The number of processes per node.')
     parser.add_argument('--rdma', type=int, required=True,
                         help='Should we use RDMA (1 as true/0 as false(default)).')
     parser.add_argument('--storageaccount', required=True,
@@ -66,17 +68,19 @@ if __name__ == '__main__':
     input_project = args.filepath
     input_mpiprocs = args.mpiprocs
     input_openmp = args.openmp
+    input_ppn = args.ppn
     input_rdma = args.rdma
     input_numnodes = args.numnodes
     #output_file = os.path.realpath('fds_results.zip')
     output_file = 'fds_results.zip'
-    run_command = "runscript.sh {} {} {} {} {} {}".format(
+    run_command = "runscript.sh {} {} {} {} {} {} {}".format(
         input_file,
         input_project,
         input_mpiprocs,
         input_openmp,
         input_rdma,
-        input_numnodes)
+        input_numnodes,
+        input_ppn)
     #call("runscript.sh", shell=True)
     call(run_command, shell=True)
 
@@ -97,6 +101,7 @@ if __name__ == '__main__':
                                       output_file_path)
 
     filelist = [os.path.realpath(input_project[:-4] + '.out'),
+                os.path.realpath(input_project[:-4] + '.out.zip'),
                 os.path.realpath('stderr.txt'),
                 os.path.realpath('stdout.txt')]
 
